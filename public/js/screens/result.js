@@ -63,6 +63,17 @@ export function LineupThumb({ u, gd }) {
     title=${si ? t('{name}（{note}）', { name: si.name, note: standInForText(chess.name) }) : undefined} />`;
 }
 
+/** Personal pre-boss LP and remaining/initial shared pool; solo and old records keep their display. */
+export function ResultLp({ p, solo = false }) {
+  const detailed = !solo && Number.isFinite(p.lpAtFinal) && Number.isFinite(p.teamLp) && Number.isFinite(p.teamLpAtFinal);
+  if (detailed) return html`<div class="rstat rstat--lp" data-testid="result-lp" title=${t('个人为最终攻势前生命；括号内为结算同盟生命／最终攻势前同盟生命。')}>
+    <span>${t('剩余生命')}</span><b class="num rstat__lp-value">${p.lpAtFinal}(${p.teamLp}/${p.teamLpAtFinal})</b>
+  </div>`;
+  return Number.isFinite(p.lp) ? html`<div class="rstat" title=${p.lpShared && !solo ? t('最终攻势起全队共享目标生命值') : ''}>
+    <span>${p.lpShared && !solo ? t('同盟剩余生命') : t('剩余生命')}</span><${LpTower} value=${p.lp} size="sm" />
+  </div>` : null;
+}
+
 function PlayerCard({ p, myId, titles, best, solo = false }) {
   const gd = useGameData();
   const titleRec = p.title ? titles.find((x) => x.id === p.title.id) || null : null;
@@ -98,7 +109,7 @@ function PlayerCard({ p, myId, titles, best, solo = false }) {
     </header>
     <div class="rcard__stats">
       ${stats.map(([k, label]) => html`<div key=${k} class=${cx('rstat', best[k] === p.playerId && 'is-best')}><span>${t(label)}</span><b class="num">${fmtNum(p.stats[k])}</b></div>`)}
-      ${Number.isFinite(p.lp) ? html`<div class="rstat" title=${p.lpShared && !solo ? t('最终攻势起全队共享目标生命值') : ''}><span>${p.lpShared && !solo ? t('同盟剩余生命') : t('剩余生命')}</span><${LpTower} value=${p.lp} size="sm" /></div>` : null}
+      <${ResultLp} p=${p} solo=${solo} />
     </div>
   </article>`;
 }
@@ -172,4 +183,3 @@ export function ResultView({ res, pub = null, myId = null, backLabel, onBack, qu
     </main>
   </div>`;
 }
-

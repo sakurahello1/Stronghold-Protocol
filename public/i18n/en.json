@@ -1,4 +1,9 @@
 {
+  "彩色头像：可用；灰色头像：禁用。干员可用不代表盟约可激活。": "Color portraits: available; gray portraits: banned. An available operator does not mean the alliance can activate.",
+  "盟约干员可用情况": "Alliance Operator Availability",
+  "仅列出有禁用干员的盟约；可用指干员未被禁用，不代表盟约可激活。": "Only alliances with banned operators are listed. Available means the operator is not banned, not that the alliance can activate.",
+  "可用": "Available",
+  "个人为最终攻势前生命；括号内为结算同盟生命／最终攻势前同盟生命。": "Personal LP before the Final Assault; parentheses show remaining team LP / team LP before the Final Assault.",
   "_meta": {
     "type": "lang",
     "lang": "en",

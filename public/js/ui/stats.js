@@ -155,6 +155,7 @@ function normalizePlayerRow(raw, quit = false) {
     roundsPassed: quit ? num(p.roundsPassed) : int(p.roundsPassed, 0),
     eliminatedRound: num(p.eliminatedRound),
     lp: num(p.lp),
+    ...(Number.isFinite(p.lpAtFinal) ? { lpAtFinal: Math.max(0, num(p.lpAtFinal)) } : {}),
     bandId: str(p.bandId),
     title,
     trophies: int(p.trophies, 0),
@@ -199,6 +200,7 @@ export function normalizeRecord(raw) {
     durationMs: num(r.durationMs),
     teamLp: num(r.teamLp),
     roomMode: r.roomMode === 'solo' || r.roomMode === 'coop' ? r.roomMode : null,
+    ...(Number.isFinite(r.teamLpAtFinal) ? { teamLpAtFinal: Math.max(0, num(r.teamLpAtFinal)) } : {}),
     selfId: str(r.selfId),
     players,
   };
@@ -391,6 +393,7 @@ export function buildRecord(res, ctx = {}) {
     durationMs: num(r.durationMs),
     teamLp: num(r.teamLp),
     roomMode: roomModeOf(str(r.modeId), ctx.roomMode),
+    teamLpAtFinal: r.teamLpAtFinal,
     selfId: myId,
     players: r.players,
   });
@@ -522,6 +525,7 @@ export function recordToResult(rec) {
     durationMs: r.durationMs,
     teamLp: r.teamLp,
     players: r.players,
+    ...(Number.isFinite(r.teamLpAtFinal) ? { teamLpAtFinal: r.teamLpAtFinal } : {}),
   };
   if (Number.isFinite(r.lastRound)) res.lastRound = r.lastRound;
   return res;

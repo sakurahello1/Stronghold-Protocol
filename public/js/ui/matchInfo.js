@@ -29,6 +29,7 @@ const cx = (...p) => p.flat().filter(Boolean).join(' ');
 /**
  * @typedef {{ sets: { drawn: Set<string>, off: Set<string> }, stateOf: (bondId: string) => 'off'|'drawn'|null,
  *   bonds: any[], core: any[], addon: any[], banned: string[], perBond: Map<string, number>,
+ *   affectedBonds: Array<{ bond: any, banned: string[], available: string[] }>,
  *   diyBanned: Array<{ slotId: string, charId: string, name: string }> }} MatchInfoModel
  */
 
@@ -51,9 +52,15 @@ export function matchInfoModel(pub, { bonds = [], chess = () => null, mode = nul
   const tierOf = (id) => chess(id)?.tier ?? 0;
   const banned = (Array.isArray(pub?.bannedChess) ? pub.bannedChess : []).filter((id) => typeof id === 'string' && !!chess(id))
     .sort((a, b) => tierOf(a) - tierOf(b));
+  const bannedSet = new Set(banned);
+  const affectedBonds = list.map((bond) => {
+    const members = [...new Set(Array.isArray(bond.visibleMembers) ? bond.visibleMembers : [])]
+      .filter(id => typeof id === 'string' && !!chess(id)).sort((a, b) => tierOf(a) - tierOf(b));
+    return { bond, banned: members.filter(id => bannedSet.has(id)), available: members.filter(id => !bannedSet.has(id)) };
+  }).filter(row => row.banned.length > 0);
   return {
     sets, stateOf, bonds: list, core: list.filter((b) => b.isCore), addon: list.filter((b) => !b.isCore),
-    banned, perBond: bannedPerBond(list, banned),
+    banned, perBond: bannedPerBond(list, banned), affectedBonds,
     diyBanned: priv && diyData ? diyBannedPieces(priv, chess, diyData) : [],
   };
 }
@@ -152,7 +159,34 @@ export function MatchInfo({ model }) {
   return html`<${MatchBondRow} title=${t('核心盟约')} micro="CORE BONDS" bonds=${model.core} model=${model} />
     <${MatchBondRow} title=${t('附加盟约')} micro="ADD-ON BONDS" bonds=${model.addon} model=${model} />
     <${MatchLegend} model=${model} />
-    <${BannedOperators} model=${model} />`;
+    <${BannedOperators} model=${model} />
+    <${AffectedBondOperators} model=${model} />`;
+}
+
+/** Supplemental roster rows; keep the upstream banned-member tooltips and original blocks intact. */
+export function AffectedBondOperators({ model }) {
+  const rows = model.affectedBonds || [];
+  if (!rows.length) return null;
+  return html`<section class="brief-availability" data-testid="affected-bond-operators">
+    <h3 class="brief-h"><span>${t('盟约干员可用情况')}</span></h3>
+    <p class="brief-availability__hint">${t('彩色头像：可用；灰色头像：禁用。干员可用不代表盟约可激活。')}</p>
+    <div class="brief-availability__rows">
+      ${rows.map(row => html`<div key=${row.bond.bondId} class="brief-availability__row" data-bond=${row.bond.bondId}>
+        <strong class="brief-availability__bond">${row.bond.name}</strong>
+        <div class="brief-availability__avatars">
+          ${[...row.banned, ...row.available].map(id => {
+            const banned = row.banned.includes(id);
+            const name = data.lookup('chess', id)?.name || id;
+            const status = banned ? t('禁用') : t('可用');
+            return html`<span key=${id} class=${cx('brief-availability__operator', banned ? 'is-banned' : 'is-available')}
+              data-chess=${id} data-available=${banned ? 'false' : 'true'} role="img" aria-label=${`${name} · ${status}`}>
+              <${UnitThumb} kind="chess" id=${id} size="sm" dim=${banned} showTier=${false} title=${`${name} · ${status}`} />
+            </span>`;
+          })}
+        </div>
+      </div>`)}
+    </div>
+  </section>`;
 }
 
 /**

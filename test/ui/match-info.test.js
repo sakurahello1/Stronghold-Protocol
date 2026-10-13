@@ -24,7 +24,7 @@ globalThis.fetch = async (url) => {
   }
 };
 
-const { matchInfoModel, MatchBondRow, MatchLegend, BannedOperators, MatchInfo, MatchInfoDialog } = await import('../../public/js/ui/matchInfo.js');
+const { matchInfoModel, MatchBondRow, MatchLegend, BannedOperators, AffectedBondOperators, MatchInfo, MatchInfoDialog } = await import('../../public/js/ui/matchInfo.js');
 const { briefingBondTip } = await import('../../public/js/ui/gameLogic.js');
 const { BondDisc, Tooltip, Modal, Button } = await import('../../public/js/ui/components.js');
 const { UnitThumb } = await import('../../public/js/ui/gameComponents.js');
@@ -143,7 +143,7 @@ test('BannedOperators: the count and dimmed avatars in tier order; none ⇒ 本�
 test('MatchInfo = 核心盟约, 附加盟约, the legend, 本局禁用干员 (one model); MatchInfoDialog = the same in a Modal with 关闭 and the status line', () => {
   const m = model();
   const parts = MatchInfo({ model: m }).filter((v) => v && typeof v === 'object');
-  assert.deepEqual(parts.map((v) => v.type), [MatchBondRow, MatchBondRow, MatchLegend, BannedOperators]);
+  assert.deepEqual(parts.map((v) => v.type), [MatchBondRow, MatchBondRow, MatchLegend, BannedOperators, AffectedBondOperators]);
   assert.deepEqual(parts.slice(0, 2).map((v) => [v.props.title, v.props.bonds]), [['核心盟约', m.core], ['附加盟约', m.addon]]);
   assert.ok(parts.every((v) => v.props.model === m));
   const onClose = () => {};

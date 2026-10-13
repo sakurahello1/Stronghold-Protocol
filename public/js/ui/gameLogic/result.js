@@ -17,6 +17,7 @@ export function normalizeResult(res, pub) {
   // From the 最终攻势 on, every survivor's LP is one merged pool (m.public teamLp) and leaks / overtime only drain
   // that pool: a survivor's remaining LP is the pool, not its own LP from before the Final Assault.
   const teamLp = Number.isFinite(r.teamLp) ? r.teamLp : Number.isFinite(pub?.teamLp) ? pub.teamLp : null;
+  const teamLpAtFinal = Number.isFinite(r.teamLpAtFinal) ? Math.max(0, r.teamLpAtFinal) : null;
   const players = (Array.isArray(r.players) ? r.players : []).filter(isObj).map((p) => {
     const pp = pubPlayers.get(p.playerId) || {};
     const title = typeof p.title === 'string' ? { id: p.title } : isObj(p.title) ? p.title : null;
@@ -30,6 +31,9 @@ export function normalizeResult(res, pub) {
       alive,
       lp: teamLp != null ? (alive === false ? 0 : Math.max(0, teamLp)) : ownLp,
       lpShared: teamLp != null,
+      lpAtFinal: Number.isFinite(p.lpAtFinal) ? Math.max(0, p.lpAtFinal) : null,
+      teamLp: teamLp != null ? Math.max(0, teamLp) : null,
+      teamLpAtFinal,
       bandId: p.bandId ?? pp.bandId ?? null,
       roundsPassed: Number.isFinite(p.roundsPassed) ? p.roundsPassed : (Number.isFinite(r.roundsPassed) ? r.roundsPassed : 0),
       title,

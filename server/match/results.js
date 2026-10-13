@@ -119,6 +119,7 @@ export function buildResult(m, outcome) {
       roundsPassed,
       eliminatedRound: ps.eliminatedRound,
       lp: Math.max(0, ps.lp),
+      lpAtFinal: Number.isFinite(ps.lpAtFinal) ? Math.max(0, ps.lpAtFinal) : null,
       bandId: ps.bandId,
       lineup,
       bonds: bondList(gd, ps.bonds).filter((b) => b.active || b.layers > 0),
@@ -142,6 +143,8 @@ export function buildResult(m, outcome) {
     reason: outcome.reason,
     // the merged Final Assault pool (null before round 14); players[].lp are the alive players' shares of it
     teamLp: m.teamLp != null ? Math.max(0, Math.round(m.teamLp)) : null,
+    // Keep the first Final Assault snapshots, including later departures and Hidden Core continuation.
+    teamLpAtFinal: m.teamLp != null ? players.reduce((sum, ps) => sum + (Number.isFinite(ps.lpAtFinal) ? Math.max(0, ps.lpAtFinal) : 0), 0) : null,
     modeId: m.modeId,
     difficulty: m.difficulty,
     stageId: m.stageId,
