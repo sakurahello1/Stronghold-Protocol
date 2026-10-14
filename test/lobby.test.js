@@ -557,7 +557,12 @@ describe('websocket lobby', () => {
     assert.equal(pong.t, 'pong');
   });
 
-  test('rate limit: bursts beyond 40 msg/s get RATE, connection survives, bucket refills', async () => {
+  test('rate limit: bursts beyond 40 msg/s get RATE, connection survives, bucket refills', async (t) => {
+    // Exercise the real socket pipeline, but do not refill tokens merely because a busy CI host is slow.
+    const realNow = srv.network.now;
+    let now = realNow();
+    srv.network.now = () => now;
+    t.after(() => { srv.network.now = realNow; });
     const c = await pool.player('Spammer');
     const N = 100;
     const rids = [];
@@ -567,24 +572,25 @@ describe('websocket lobby', () => {
     const pongs = replies.filter((m) => m.t === 'pong').length;
     const limited = replies.filter((m) => m.t === 'error' && m.code === ERR.RATE).length;
     assert.equal(pongs + limited, N);
-    assert.ok(pongs >= 39 && pongs <= 45, `pongs ${pongs}`); // hello used one token
-    assert.ok(limited >= 55, `limited ${limited}`);
+    assert.equal(pongs, 39, 'hello used one token; the same-time burst cannot refill');
+    assert.equal(limited, 61);
     assert.ok(c.isOpen);
-    await delay(1100);
+    now += 1100;
     const ok = await c.request({ t: 'ping', c: 0 });
     assert.equal(ok.t, 'pong');
   });
 
-  test('flooding far beyond the limit closes the socket (1008)', async () => {
+  test('flooding far beyond the limit closes the socket (1008)', async (t) => {
+    // Keep one abuse window fixed even if the machine takes over a second to drain a socket burst.
+    const realNow = srv.network.now;
+    const now = realNow();
+    srv.network.now = () => now;
+    t.after(() => { srv.network.now = realNow; });
     const c = await pool.player('Flood');
-    // bursts until the server closes it: the close needs more than abuseDropsPerSec drops inside one 1 s window, and on
-    // a heavily loaded machine a single burst of 600 can be read over more than a second — the old single burst then
-    // never closed the socket and `await c.closed` (no timeout) hung the whole file
-    const t0 = Date.now();
-    while (c.isOpen && Date.now() - t0 < 20000) {
-      for (let i = 0; i < 600 && c.isOpen; i++) c.send({ t: 'ping', c: i, rid: null });
-      await delay(50);
-    }
+    // One bounded burst exceeds the real abuse threshold. Continuing to queue compressed frames after
+    // the server has already sent CLOSE can delay the close handshake, obscuring the assertion.
+    const count = srv.network.opts.rateBurst + srv.network.opts.abuseDropsPerSec + 1;
+    for (let i = 0; i < count; i++) c.send({ t: 'ping', c: i, rid: null });
     const info = await Promise.race([c.closed, delay(10000).then(() => null)]);
     assert.ok(info, 'the server closed the flooding socket');
     assert.equal(info.code, 1008);
