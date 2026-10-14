@@ -17,7 +17,7 @@
 
 import { useEffect } from '../../vendor/hooks.module.js';
 import { html, Button, Icon, MicroLabel, DifficultyTag } from '../ui/components.js';
-import { useGameData, Img, UnitThumb, BandIcon, PlayerAvatar, BondGlyph, LpTower, Sprite } from '../ui/gameComponents.js';
+import { useGameData, Img, UnitThumb, ItemIcon, BandIcon, PlayerAvatar, BondGlyph, LpTower, Sprite } from '../ui/gameComponents.js';
 import { normalizeResult, fmtNum, diyRecordFor, cardStandIn, standInForText } from '../ui/gameLogic.js';
 import { data } from '../data.js';
 import { enemyIconUrl, titleIconUrl, uiUrl } from '../ui/assetUrls.js';
@@ -63,6 +63,17 @@ export function LineupThumb({ u, gd }) {
     title=${si ? t('{name}（{note}）', { name: si.name, note: standInForText(chess.name) }) : undefined} />`;
 }
 
+/** Shared by live settlement and saved match replay; retain equipment order and duplicates. */
+export function LineupUnit({ u, gd }) {
+  const items = (Array.isArray(u.items) ? u.items : []).filter(id => typeof id === 'string' && id.length);
+  return html`<div class="rcard__unit" data-chess=${u.id}>
+    <${LineupThumb} u=${u} gd=${gd} />
+    ${items.length ? html`<div class="rcard__equipment">${items.map((id, i) => html`<span key=${i} data-item=${id}>
+      <${ItemIcon} itemId=${id} size="xs" showTier=${false} />
+    </span>`)}</div>` : null}
+  </div>`;
+}
+
 /** Personal pre-boss LP and remaining/initial shared pool; solo and old records keep their display. */
 export function ResultLp({ p, solo = false }) {
   const detailed = !solo && Number.isFinite(p.lpAtFinal) && Number.isFinite(p.teamLp) && Number.isFinite(p.teamLpAtFinal);
@@ -93,7 +104,7 @@ function PlayerCard({ p, myId, titles, best, solo = false }) {
       </div>
       <div class="rcard__mid">
         <div class="rcard__lineup">
-          ${lineup.length ? lineup.map((u, i) => html`<${LineupThumb} key=${i} u=${u} gd=${gd} />`)
+          ${lineup.length ? lineup.map((u, i) => html`<${LineupUnit} key=${i} u=${u} gd=${gd} />`)
             : html`<span class="rcard__noinfo">${p.alive === false ? t('阵容已撤离') : 'NO INFO'}</span>`}
         </div>
         ${bonds.length ? html`<div class="rcard__bonds">${bonds.map((b) => html`<span key=${b.bondId} class=${cx('rbond', b.active && 'is-on')} title=${gd.bond(b.bondId)?.name || b.bondId}>
