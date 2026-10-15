@@ -81,6 +81,10 @@
 .rstat b { font-size: calc(.18 * var(--t)); color: #fff; }
 .rstat.is-best b { color: var(--gold); }
 .rstat--lp { flex-wrap: wrap; }
-.rstat--lp .rstat__lp-value { margin-left: auto; font-size: max(calc(.16 * var(--t)), 12px); }
+.rstat--lp .rstat__lp-value { margin-left: auto; }
+.rstat--lp .rstat__lp-value b { font-size: max(calc(.16 * var(--t)), 12px); }
+@media (max-width: 640px) {
+  .rstat--lp { grid-column: span 2; }
+}
 .result__foot { flex: 0 0 auto; margin-top: auto; padding-top: .2rem; display: flex; }
 .result__foot .btn { min-width: 3.4rem; }

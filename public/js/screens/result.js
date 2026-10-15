@@ -78,7 +78,10 @@ export function LineupUnit({ u, gd }) {
 export function ResultLp({ p, solo = false }) {
   const detailed = !solo && Number.isFinite(p.lpAtFinal) && Number.isFinite(p.teamLp) && Number.isFinite(p.teamLpAtFinal);
   if (detailed) return html`<div class="rstat rstat--lp" data-testid="result-lp" title=${t('个人为最终攻势前生命；括号内为结算同盟生命／最终攻势前同盟生命。')}>
-    <span>${t('剩余生命')}</span><b class="num rstat__lp-value">${p.lpAtFinal}(${p.teamLp}/${p.teamLpAtFinal})</b>
+    <span>${t('剩余生命')}</span><span class="lp lp--sm rstat__lp-value">
+      <${Sprite} k="hudPanel/icon_hp" class="lp__icon" fallback=${html`<${Icon} name="rook" class="lp__icon" />`} />
+      <b class="num lp__val">${p.lpAtFinal}(${p.teamLp}/${p.teamLpAtFinal})</b>
+    </span>
   </div>`;
   return Number.isFinite(p.lp) ? html`<div class="rstat" title=${p.lpShared && !solo ? t('最终攻势起全队共享目标生命值') : ''}>
     <span>${p.lpShared && !solo ? t('同盟剩余生命') : t('剩余生命')}</span><${LpTower} value=${p.lp} size="sm" />
