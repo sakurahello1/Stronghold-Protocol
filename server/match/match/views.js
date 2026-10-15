@@ -70,6 +70,7 @@ export class MatchViews {
       serverNow: this.sched.now(),
       modeId: this.modeId,
       difficulty: this.difficulty,
+      ...(this.prepTimer !== null ? { prepTimer: this.prepTimer } : {}),
       stageId: this.stageId,
       setupRevision: this.setupRevision,
       rerollVote: this.setupVote ? {

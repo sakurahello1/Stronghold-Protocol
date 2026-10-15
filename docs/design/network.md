@@ -167,3 +167,12 @@ The preparation medic and future battle's medic/Touch use the same entitlement; 
 alive. A mere draft focus grants nothing; another match starts without it. Only `band_amedic` is retained in
 `contentInfo.matchBands`; `teammates` and other team strategies still filter eliminated players. The official text
 and initial/unlimited-round data do not explicitly settle the holder-elimination case (§30.14).
+
+### Custom preparation timer protocol
+
+`room.state.prepTimer` is a boolean (co-op default true; solo default false). `room.setPrepTimer {on:boolean}`
+is accepted from the host before start only, in either mode; changing it un-readies other human seats and
+broadcasts the room. NOT_IN_ROOM / NOT_HOST / ROOM_STARTED and message validation guard the operation.
+The value is frozen into `Match.opts.prepTimer` at start and kept across matches/host migration. It controls
+PREP deadlines only (DESIGN §6). Explicitly configured matches also expose `m.public.prepTimer` so a solo HUD
+uses the retained raw preparation duration for its gauge. Legacy callers omit the field and keep the old wire shape.
