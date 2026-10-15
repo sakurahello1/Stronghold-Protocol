@@ -84,6 +84,12 @@ export function aiLastOption(room, myId) {
   return { on: room.aiPicksLast === true, editable: room.hostId != null && room.hostId === myId };
 }
 
+/** Missing on old servers: hide the control rather than promise an unsupported rule. */
+export function prepTimerOption(room, myId) {
+  if (!room || typeof room.prepTimer !== 'boolean') return null;
+  return { on: room.prepTimer, editable: room.hostId != null && room.hostId === myId && !room.inMatch };
+}
+
 /** Invite link for a room code (current page URL with ?room=CODE). */
 export function inviteLink(code) {
   const loc = globalThis.location;
@@ -204,6 +210,17 @@ function DifficultyPicker({ room, isHost, busy, onPick }) {
   </div>`;
 }
 
+export function PrepTimerToggle({ option, busy, onToggle }) {
+  if (!option) return null;
+  return html`<${Tooltip} text=${t('仅控制每回合准备阶段；开启后单人也计时，关闭后多人也不限时。选卡与战斗计时不受影响。')}>
+    <label class="prep-timer">
+      <input type="checkbox" checked=${option.on} disabled=${!option.editable || !!busy}
+        onChange=${event => option.editable && onToggle(event.currentTarget.checked)} />
+      <span>${t('准备阶段计时器')}</span>
+    </label>
+  <//>`;
+}
+
 /** The 「AI 队友最后选择」 switch (co-op): the host toggles it, everybody else sees its state. */
 function AiLastToggle({ option, busy, onToggle }) {
   if (!option) return null;
@@ -260,6 +277,7 @@ export function RoomScreen() {
   };
   const setDifficulty = (difficulty) => run('diff', () => net.request('room.setDifficulty', { difficulty }));
   const setAiLast = (on) => run('ailast', () => net.request('room.setAiPicksLast', { on }));
+  const setPrepTimer = (on) => run('preptimer', () => net.request('room.setPrepTimer', { on }));
   // spectator seats: the host frees one; a spectator takes a free player seat with room.join of this room
   const removeSpectator = (playerId) => run(`rs${playerId}`, () => net.request('room.removeSpectator', { playerId }));
   const sit = () => run('sit', () => net.request('room.join', { code: room.code }));
@@ -331,18 +349,19 @@ export function RoomScreen() {
         <ul>
           ${info.effects.map((e) => html`<li key=${e}>${e}</li>`)}
           <li>${t('共')} <b class="num">${info.rounds}</b> ${tc('rounds', '回合')}${info.hidden ? t('，满足条件时进入隐秘核心') : ''}</li>
-          <li>${t('独立模拟中休整期与机变阶段不限时')}</li>
+          <li>${room.prepTimer === true ? t('准备阶段开启倒计时；机变阶段仍不限时。') : t('独立模拟中休整期与机变阶段不限时')}</li>
         </ul>
       </aside>`}
     </main>
     <${SpectatorBar} facts=${facts} myId=${me.playerId} busy=${busy} onRemove=${removeSpectator} onSit=${sit} />
 
-    <footer class="room-bar">
+    <footer class=${`room-bar${prepTimerOption(room, me.playerId) ? ' room-bar--prep-timer' : ''}`}>
       <div class="room-bar__left">
         <span class="room-bar__label">${t('模拟难度')}<${MicroLabel}>DIFFICULTY<//></span>
         <div class="room-bar__opts">
           <${DifficultyPicker} room=${room} isHost=${facts.isHost} busy=${busy} onPick=${setDifficulty} />
           <${AiLastToggle} option=${aiLastOption(room, me.playerId)} busy=${busy} onToggle=${setAiLast} />
+          <${PrepTimerToggle} option=${prepTimerOption(room, me.playerId)} busy=${busy} onToggle=${setPrepTimer} />
         </div>
       </div>
       <div class="room-bar__center">

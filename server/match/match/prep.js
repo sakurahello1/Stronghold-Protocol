@@ -22,8 +22,9 @@ export class MatchPrep {
       this.dispatch(ps, 'onPrepStart', { round: this.round });
       ps.recompute();
     }
-    // solo / single-human matches: untimed (soloUntimed); co-op: the round's prepTime
-    const secs = this.soloUntimed ? null : this.gd.prepTime(this.round);
+    // Room setting overrides only PREP. Legacy callers keep solo / single-human matches untimed.
+    const timed = this.prepTimer ?? !this.soloUntimed;
+    const secs = timed ? this.gd.prepTime(this.round, { force: this.prepTimer === true }) : null;
     this.setDeadline(secs, () => this.prepDeadline());
     let i = 0;
     for (const ps of alive) if (ps.botControlled) this.scheduleBotPrep(ps, i++);

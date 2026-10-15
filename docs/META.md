@@ -961,3 +961,10 @@ Fixed equipment gifts from `SERVER_GAIN_EQUIP` (卡涅利安、蜜蜡、缪尔�
 including the same families awarded by 变形者. They still occupy ordinary/advanced 1/2 copies and can leave availability
 at zero after a removal. Ordinary shop, reward and random grants retain their limits. `requirePool:false` is not a
 universal equipment bypass. Rockrock/Flametail's measured weighted subsets remain subject to shared availability (§30.2).
+
+### Custom preparation timer
+
+`room.setPrepTimer` freezes `Match.prepTimer` at match start (DESIGN §6). True times PREP regardless of human
+count; false removes only PREP's countdown, while all-ready still ends it. Co-op rooms default true, solo rooms
+false. Match callers omitting the option keep the legacy `soloUntimed` behavior described above.
+Strategy/Arts drafts and all combat timers are unchanged.

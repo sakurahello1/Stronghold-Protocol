@@ -254,7 +254,8 @@ export function phaseTotalSeconds(pub, config, myId = null) {
       const first = !sp || sp.pickedCount === 0;
       return first ? (num(timers.spFirst) ?? 30) : (num(timers.spTurn) ?? 16);
     }
-    case PHASE.PREP: return num(mode?.rounds?.[String(pub.round)]?.prepTime);
+    case PHASE.PREP: return num(mode?.rounds?.[String(pub.round)]?.prepTime)
+      ?? (pub.prepTimer === true ? num(mode?.rounds?.[String(pub.round)]?.prepTimeData) ?? 90 : null);
     case PHASE.COMBAT:
     case PHASE.UNITE: return num(mode?.rounds?.[String(pub.round)]?.combatTimeLimit);
     // 最终攻势 / 隐秘核心: m.public.deadline is the level's 120 s countdown (maxPlayTime; the battle goes on past it)

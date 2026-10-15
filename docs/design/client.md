@@ -232,3 +232,10 @@ maintainer's decision of 2026-10-13). On, an operator's ammo bar carries `left/m
 the exact b.snap `ammo` counts, extra rounds and refills included), centred in the bar's yellow; the rows under the bars
 move down by its height. It hides with the magazine, in the prep view and after death. The simplified board has no ammo
 bar and so no count.
+
+### Custom pre-game preparation timer
+
+The room waiting screen shows a native checkbox labelled 「准备阶段计时器」 beside the existing host options.
+All players see its state; only the host can change it before start. The hint distinguishes PREP from draft/combat
+timers. A solo briefing reflects whether preparation is timed. A legacy server without `room.state.prepTimer`
+hides the unsupported control. The footer reserves room for the extra row on short landscape screens.
