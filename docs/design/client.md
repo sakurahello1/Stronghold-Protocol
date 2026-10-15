@@ -193,8 +193,9 @@ Community UI and recovery (§29.6): DIY reuses roster stats and skill previews; 
 
 Custom recovery follow-up (2026-10-15): a page reopened directly into a match can exceed the 12 s engine-import
 deadline while its module graph is still downloading. A fallback schedules automatic retries after 2 s and then
-8 s [ASSUMED], sharing the existing two-attempt budget with online/visibility events. Hidden/offline pages do not
-spend an attempt; their normal events resume recovery. Successful initialization resets the budget. Each attempt
+8 s [ASSUMED], with a two-attempt automatic budget separate from the existing two online/visibility retries. A long
+outage must not consume those event retries before connectivity or the player returns. Hidden/offline pages do not
+spend an attempt; their normal events resume recovery. Successful initialization resets both budgets. Each attempt
 cleans up the previous view, and leaving the screen cancels its timer. Explicit `?render=fallback` never retries;
 `?board=2d` still selects the 2D board inside the normal renderer. No simulation or match is restarted.
 
