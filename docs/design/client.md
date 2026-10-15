@@ -191,6 +191,14 @@ It does not diagnose a particular user's GPU or persist a disabled renderer pref
 
 Community UI and recovery (§29.6): DIY reuses roster stats and skill previews; Swire's coins show current/cap. The lobby player chip opens statistics and the responsive header keeps optional controls from overlapping its title. Settlement's summary scrolls separately from Return. Failed board art can retry, and failed three.js imports use two bounded fresh URLs. Failed engine initialization can remount on online/visibility, at most twice consecutively, cleaning up each previous view; explicit fallback/2D stays selected.
 
+Custom recovery follow-up (2026-10-15): a page reopened directly into a match can exceed the 12 s engine-import
+deadline while its module graph is still downloading. A fallback schedules automatic retries after 2 s and then
+8 s [ASSUMED], with a two-attempt automatic budget separate from the existing two online/visibility retries. A long
+outage must not consume those event retries before connectivity or the player returns. Hidden/offline pages do not
+spend an attempt; their normal events resume recovery. Successful initialization resets both budgets. Each attempt
+cleans up the previous view, and leaving the screen cancels its timer. Explicit `?render=fallback` never retries;
+`?board=2d` still selects the 2D board inside the normal renderer. No simulation or match is restarted.
+
 Replacing a field renderer also resets the game screen's entered-view identity. Frames are buffered while the replacement loads; after subscribing, the local runner re-shows full current metadata/snapshot, or the server resends the watched field. Real local and server-streamed battles preserve the same simulation object and clock through recovery, including enemies spawned before the new renderer existed.
 
 §30.4: the HP tower retains current HP until settlement and shows pending loss separately. Shop refresh is single
