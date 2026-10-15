@@ -5,8 +5,17 @@ import { fileURLToPath } from 'node:url';
 
 const executable = process.env.CHROME_PATH;
 const remote = process.env.RECONNECT_URL;
+const art = existsSync(new URL('../../data/local-assets.json', import.meta.url)) &&
+  ['png', 'webp'].some(ext => existsSync(new URL(`../../public/assets/local/map/autochess/TX_autochessi_D.${ext}`, import.meta.url)));
+function rendered() {
+  const view = window.__SP_VIEW__, state = window.__SP__?.store.get();
+  if (view?.kind !== 'engine' || !view.raw.stats().board3d.on) return false;
+  const id = state?.match.public?.stageId;
+  const listed = window.__SP__.data.get('local')?.groups?.[`scene/${id}`];
+  return !listed || view.raw.debug.board3d.scenePacks.has(id);
+}
 test('closing and reopening a real match restores its scene and operator models', {
-  skip: process.env.RENDER_E2E !== '1' || !executable || !existsSync(executable), timeout: 240000,
+  skip: process.env.RENDER_E2E !== '1' || !executable || !existsSync(executable) || (!remote && !art), timeout: 240000,
 }, async t => {
   const { startServer } = await import('../../server/index.js');
   const puppeteer = (await import('puppeteer-core')).default;
@@ -65,7 +74,7 @@ test('closing and reopening a real match restores its scene and operator models'
     await send('g.band', { bandId: 'band_bldsk' });
     await page.waitForFunction(() => window.__SP__.store.get().match.public?.phase === 'PREP');
     await send('g.buy', { slot: 0 });
-    await page.waitForFunction(() => window.__SP_VIEW__?.kind === 'engine' && window.__SP_VIEW__.raw.stats().board3d.on, { timeout: 60000 });
+    await page.waitForFunction(rendered, { timeout: 60000 });
     await page.waitForFunction(() => [...window.__SP_VIEW__.raw.debug.views.values()].some(v => v.spineReady));
     const identity = await page.evaluate(() => ({ id: window.__SP__.store.get().me.playerId, code: window.__SP__.store.get().room.code }));
     t.diagnostic(`Initial ${JSON.stringify(await stats())}`);
@@ -74,7 +83,7 @@ test('closing and reopening a real match restores its scene and operator models'
       await page.waitForFunction(({ id, code }) => {
         const state = window.__SP__.store.get(); return state.me.playerId === id && state.room?.code === code && state.match.public?.phase === 'PREP';
       }, {}, identity);
-      await page.waitForFunction(() => window.__SP_VIEW__?.kind === 'engine' && window.__SP_VIEW__.raw.stats().board3d.on, { timeout: 60000 });
+      await page.waitForFunction(rendered, { timeout: 60000 });
       await page.waitForFunction(() => [...window.__SP_VIEW__.raw.debug.views.values()].some(v => v.spineReady));
       t.diagnostic(`Reopened delayed=${delayed}: ${JSON.stringify(await stats())}`);
     }
