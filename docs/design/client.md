@@ -50,6 +50,13 @@ Visuals: oblique perspective board (tilted ~30°, trapezoid tiles), raised highl
 
 ## 10. Client UI (screens & components)
 
+The custom server lobby is part of the mode/difficulty screen (`ui/serverRooms.js`): paginated room summaries
+show the host nickname, mode/difficulty, occupied seats/capacity, ready/in-game state and join/spectate controls.
+It refreshes every 5 seconds while online and visible, on return to the tab, or manually; requests do not overlap
+within a mounted page. Leaving the screen removes its listener/timer. Running/full rooms disable player entry,
+while spectating remains available when a co-op spectator seat is free. Legacy servers without `room.list`
+show a notice and retain the original key-based entry. This does not introduce Cloudflare/account dependencies.
+
 Settlement lineups and full saved-match replays share `screens/result.js LineupUnit`: equipped item icons appear
 below their operator portrait, in stored order (including duplicate items), with the existing localized item-name
 tooltip. Empty or missing item lists draw no equipment row. Small icons wrap inside the operator's column on narrow
