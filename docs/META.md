@@ -41,6 +41,12 @@ server/match/
 
 ## 1. Match flow
 
+Custom same-server room browser: `Lobby.listRooms` answers the identified client's `room.list {page?}` with
+a bounded, metadata-only directory. It reads the existing rooms and does not create sessions, move players,
+start/stop matches or change rules. The field whitelist, paging and privacy boundary are in DESIGN §8;
+the mode/difficulty screen consumes it as specified in DESIGN §10. Join/spectate still pass through the original
+lobby guards, so refreshing a stale list cannot permit player entry into a running game.
+
 ```
 LOBBY → INFO_CHECK (co-op 25 s; solo and single-human matches untimed; all humans confirmed ⇒ next) → BAND_DRAFT → BATTLE_CHECK (3 s)
 → for r = 1..lastRound (+ hidden):

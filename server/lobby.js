@@ -333,6 +333,7 @@ export class Lobby {
    */
   onMessage(session, msg) {
     switch (msg.t) {
+      case 'room.list': return this.listRooms(session, msg);
       case 'room.create': return this.create(session, msg);
       case 'room.join': return this.join(session, msg);
       case 'room.leave': return this.leave(session);
@@ -424,6 +425,27 @@ export class Lobby {
     session.pendingResult = null;
     this.log.info(`[lobby] ${code} created (${mode}/${difficulty}) by ${session.name}`);
     this.broadcastState(room);
+    return OK;
+  }
+
+  /** Same-server directory: never disclose tokens, player IDs, addresses, loadouts or match-private state. */
+  listRooms(session, { page = 0 } = {}) {
+    const rooms = [...this.rooms.values()].filter(room => !room.disposed)
+      .sort((a, b) => b.createdAt - a.createdAt || (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
+    const rows = rooms.slice(page * 20, (page + 1) * 20).map(room => ({
+      code: room.code,
+      hostName: room.seatOf(room.hostId)?.name || '—',
+      mode: room.mode,
+      difficulty: room.difficulty,
+      players: room.seats.filter(seat => seat && !seat.left).length,
+      capacity: room.mode === 'solo' ? 1 : MAX_SEATS,
+      inMatch: !!room.match,
+      spectators: room.spectators.length,
+      spectatorCapacity: MAX_SPECTATORS,
+      canJoin: room.mode === 'coop' && !room.match && room.freeSeat() >= 0,
+      canSpectate: room.mode === 'coop' && room.spectators.length < MAX_SPECTATORS,
+    }));
+    sendSession(session, { t: 'room.list', page, pages: Math.max(1, Math.ceil(rooms.length / 20)), total: rooms.length, rooms: rows });
     return OK;
   }
 

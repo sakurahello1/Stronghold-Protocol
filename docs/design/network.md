@@ -4,6 +4,17 @@ Part of [DESIGN.md](../DESIGN.md) (the index; section numbers are global).
 
 ## 8. Network protocol (shared/protocol.js is normative)
 
+Custom same-server directory: identified clients may send `room.list {page?}` (zero-based, default 0,
+maximum 10000, existing heavy-request bucket). Only the requester receives
+`room.list {page, pages, total, rooms}` and the usual `ok {rid}`. Each page has at most 20 metadata-only entries:
+`{code, hostName, mode, difficulty, players, capacity, inMatch, spectators, spectatorCapacity, canJoin, canSpectate}`.
+Occupied player seats include AI and reserved disconnected seats, but not departed players; solo capacity is 1.
+No player IDs, tokens, network addresses, shop/loadout data or private battle state are returned. Browsing never
+joins a room. Existing `room.join` and `room.spectate` remain authoritative (including full/deleted rooms and
+start races): only spectators may enter a running co-op match; solo remains closed to join/spectate.
+This list is visible to anyone connected to this game server; it is not an account or authentication system and
+not a cross-server public directory. Keep the deployment address restricted to intended users.
+
 Transport: one WebSocket per tab at `/ws`, JSON text frames `{ t: '<type>', ...payload }`. Client requests may carry `rid` (request id); the server's direct reply echoes `rid` (`ok` or `error`). Server pushes have no `rid`. Max frame 64 KB inbound (a compressed frame counts its inflated size); rate limit 40 msgs/s per connection (excess dropped with `error RATE`). Frames from 1 KB up are compressed with permessage-deflate (RFC 7692; `server/http/websocket.js WS_DEFLATE`: no server context takeover, a 2 KB server window, zlib memLevel 7 — about 72 KB of zlib state per connection); smaller frames go out plain, and a client that offers no compression, or caps the server window below 2 KB, gets plain frames. A measured solo session (rounds 3–5, `/healthz?traffic=1`): 173 KB of server frames → 60 KB on the wire.
 
 ### 8.1 Session & lobby

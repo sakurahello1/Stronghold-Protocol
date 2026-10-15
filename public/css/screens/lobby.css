@@ -14,6 +14,24 @@
 }
 .lobby-left, .lobby-right { display: flex; flex-direction: column; min-width: 0; }
 
+/* Same-server directory: room actions retain the server's join/spectate checks. */
+.server-rooms { grid-column: 1 / -1; min-width: 0; padding: .18rem; border: 1px solid var(--line); background: rgba(13, 16, 15, .9); }
+.server-rooms__head { display: flex; align-items: center; justify-content: space-between; gap: .12rem; }
+.server-rooms__head .section-label { margin: 0; }
+.server-rooms__hint, .server-rooms__error, .server-rooms__empty { margin: .1rem 0; font-size: max(calc(.14 * var(--t)), 12px); color: var(--text-lo); }
+.server-rooms__error { color: var(--gold); }
+.server-rooms__scroll { max-height: 3rem; overflow: auto; overscroll-behavior: contain; }
+.server-rooms__table { width: 100%; border-collapse: collapse; font-size: max(calc(.15 * var(--t)), 12px); text-align: left; }
+.server-rooms__table th, .server-rooms__table td { padding: .08rem; border-bottom: 1px solid var(--line); }
+.server-rooms__table th { color: var(--text-lo); font-weight: 400; }
+.server-rooms__table small { display: block; color: var(--text-dim); }
+.server-rooms__host { display: block; max-width: 3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.server-rooms__status { color: var(--mint-400); white-space: nowrap; }
+.server-rooms__status.is-running { color: var(--gold); }
+.server-rooms__actions, .server-rooms__pages { display: flex; align-items: center; gap: .08rem; }
+.server-rooms__pages { justify-content: flex-end; padding-top: .08rem; }
+.server-rooms__actions .btn { white-space: nowrap; }
+
 /* ---- mode cards ------------------------------------------------------------------------------------ */
 .mode-cards { display: grid; grid-template-columns: 1fr 1fr; gap: .24rem; margin-bottom: .34rem; }
 .mode-card {
