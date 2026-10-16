@@ -658,9 +658,15 @@ describe('websocket lobby', () => {
     const now = Date.now();
     t.mock.method(srv.network, 'now', () => now);
     const c = await pool.player('Flood');
-    // Keep one rate window and await replies instead of building a compressed send queue ahead of the close frame.
+    // Keep one rate window. Drain all 400 drop replies before sending the closing frame, without 400 serial round trips.
     for (let i = 0; i < 39; i++) assert.equal((await c.request({ t: 'ping', c: i })).t, 'pong');
-    for (let i = 0; i < 400; i++) await expectError(c, { t: 'ping', c: i }, ERR.RATE);
+    const rids = Array.from({ length: 400 }, (_, i) => c.send({ t: 'ping', c: i }));
+    for (const rid of rids) {
+      const reply = await c.waitFor(null, (m) => m.rid === rid);
+      assert.equal(reply.t, 'error');
+      assert.equal(reply.code, ERR.RATE);
+      assert.equal(typeof reply.msg, 'string');
+    }
     assert.ok(c.isOpen, '400 drops do not close the socket');
     c.send({ t: 'ping', c: 400, rid: null });
     const info = await c.closed;
