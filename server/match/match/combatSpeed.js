@@ -55,7 +55,11 @@ export class MatchCombatSpeed {
       }
       for (const f of fields) {
         const gt = elapsed.get(f);
-        f.startAt = now - gt / speed * 1000;
+        // _fieldElapsed is clamped at the limit. Once already in grace, keep the original nominal end:
+        // anchoring that clamped value to "now" would give a late client another 15 seconds on every vote.
+        const endAt = f.startAt + f.spec.timeLimit / old * 1000;
+        f.startAt = f.mode === 'client' && f.spec.timeLimit > 0 && now >= endAt
+          ? endAt - f.spec.timeLimit / speed * 1000 : now - gt / speed * 1000;
         if (f.mode === 'client') {
           if (this.paused) f.rearmDeadline = true;
           else this._armDeadline(f);

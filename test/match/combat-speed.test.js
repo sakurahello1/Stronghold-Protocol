@@ -78,6 +78,23 @@ test('server-run bot field releases its unchanged result on the retimed clock', 
   } finally { h.m.dispose(); }
 });
 
+test('late votes cannot restart or extend the real-time result grace', () => {
+  const h = combat();
+  try {
+    const f = h.m.fields.find(f => f.authority === 'p_0');
+    const expires = f.deadlineTimer.at;
+    h.sched.advance(f.spec.timeLimit / 2 * 1000 + 5000);
+    assert.equal(f.mode, 'client', 'still waiting for the delayed client result');
+    vote(h, 'p_0');
+    assert.equal(f.deadlineTimer.at, expires, 'enabling during grace preserves the original expiry');
+    h.sched.advance(5000); vote(h, 'p_0', false);
+    assert.equal(f.deadlineTimer.at, expires, 'withdrawal cannot restart the grace either');
+    h.sched.advance(expires - h.sched.now() - 1); assert.equal(f.mode, 'client');
+    h.sched.advance(1); assert.equal(f.mode, 'server', 'takeover happens at the unchanged expiry');
+    assert.deepEqual(h.logs.error, []);
+  } finally { h.m.dispose(); }
+});
+
 test('legacy server-streamed combat doubles fixed ticks, then restores them without resetting battles', () => {
   const h = combat({ clientCombat: false });
   try {
