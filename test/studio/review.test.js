@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { fork } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { Readable } from 'node:stream';
@@ -122,21 +123,58 @@ test('trial draft writer rejects traversal, absolute paths, hidden names and bac
 
 for (const ending of ['close', 'timeout', 'probe-timeout']) test(`a real pinned SIGTERM-ignoring probe leaves no grandson after trial ${ending}`, { timeout: 20000 }, async t => {
   const f = scriptFixture(t), marker = path.join(f.root, 'probe.pid');
+  const probeResult = path.join(f.root, 'probe-result.json');
+  const preload = path.join(f.root, 'record-probe.mjs');
+  // A timed-out cold start may never enter setup. Record the real spawn result, not a file written by the plugin.
+  if (ending === 'probe-timeout') fs.writeFileSync(preload, `
+    import cp from 'node:child_process'; import fs from 'node:fs';
+    import { syncBuiltinESMExports } from 'node:module';
+    const spawnSync = cp.spawnSync;
+    cp.spawnSync = (...args) => { const r = spawnSync(...args);
+      fs.writeFileSync(${JSON.stringify(probeResult)}, JSON.stringify({ pid: r.pid, signal: r.signal })); return r; };
+    syncBuiltinESMExports();
+  `);
   f.put('loop', `export default () => { const p = global['pro' + 'cess'];
     p.getBuiltinModule('fs').writeFileSync(${JSON.stringify(marker)}, String(p.pid));
     p.on('SIGTERM', () => {}); while (true) {} }`);
+  let expireTrial;
+  if (ending === 'timeout') {
+    // This case checks descendant reaping, not startup speed. Expire the actual watchdog after setup is running;
+    // trial.test.js separately verifies a real wall-clock watchdog on an unresponsive child.
+    const setTimer = globalThis.setTimeout;
+    t.mock.method(globalThis, 'setTimeout', (fn, ms, ...args) => {
+      if (ms !== 6000) return setTimer(fn, ms, ...args);
+      expireTrial = () => fn(...args);
+      return setTimer(() => {}, ms);
+    });
+  }
   let leader;
   const bench = createTrialBench({ registry: f.registry, files: createPluginFiles(f.pluginsDir),
-    spawn: (entry, args, opts) => (leader = fork(entry, args, { ...opts, env: { ...process.env, SP_SCRIPT_PROBE_MS: ending === 'probe-timeout' ? '1000' : '60000' } })),
+    spawn: (entry, args, opts) => (leader = fork(entry, args, { ...opts,
+      execArgv: [...opts.execArgv, ...(ending === 'probe-timeout' ? ['--import', pathToFileURL(preload).href] : [])],
+      env: { ...process.env, SP_SCRIPT_PROBE_MS: ending === 'probe-timeout' ? '1000' : '60000' } })),
     limits: { ...TRIAL_LIMITS, timeoutMs: ending === 'timeout' ? 6000 : 15000 } });
   t.after(() => bench.close());
   const pending = bench.run({ id: 'loop', seconds: 1 });
   const checked = ending === 'probe-timeout' ? pending : assert.rejects(pending, { code: ending === 'timeout' ? 'PLUGIN_STUDIO_TRIAL_TIMEOUT' : 'PLUGIN_STUDIO_TRIAL_FAILED' });
-  for (let n = 0; n < 400 && !fs.existsSync(marker); n++) await delay(20);
-  assert.ok(fs.existsSync(marker), 'the actual contentSet preflight ran');
-  const pid = Number(fs.readFileSync(marker, 'utf8'));
+  let pid;
+  if (ending === 'probe-timeout') {
+    await checked;
+    const spawned = JSON.parse(fs.readFileSync(probeResult, 'utf8'));
+    assert.equal(spawned.signal, 'SIGKILL');
+    pid = spawned.pid;
+  } else {
+    // The existing test/trial deadlines bound startup. A separate eight-second polling cutoff could fail first.
+    let settled;
+    pending.then(value => { settled = { value }; }, error => { settled = { error: error.code }; });
+    while (!fs.existsSync(marker) && !settled) await delay(20);
+    assert.ok(fs.existsSync(marker), `the actual contentSet preflight ran: ${JSON.stringify(settled)}`);
+    pid = Number(fs.readFileSync(marker, 'utf8'));
+  }
+  assert.ok(pid > 0, 'a real preflight process was spawned');
   t.after(() => { try { process.kill(pid, 'SIGKILL'); } catch { /* absent */ } });
   if (ending === 'close') bench.close();
+  if (ending === 'timeout') { assert.equal(typeof expireTrial, 'function'); expireTrial(); }
   const result = await checked;
   if (ending === 'probe-timeout') { assert.equal(result.ok, false); assert.equal(result.issues[0].code, 'PLUGIN_SCRIPT_CHECK'); assert.match(result.issues[0].text, /1000 ms.*SIGKILL/); }
   for (let n = 0; n < 100; n++) { try { process.kill(pid, 0); await delay(20); } catch { break; } }
