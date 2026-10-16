@@ -6,6 +6,18 @@ import { TestClient } from './helpers/wsClient.js';
 import { validateC2S } from '../shared/protocol.js';
 import { ERR } from '../shared/constants.js';
 import { prepTimerOption, PrepTimerToggle } from '../public/js/screens/room.js';
+import { wireOptions } from '../server/match/host/proxy.js';
+
+test('gameplay-plugin match hosts receive either explicit PREP timer value, with legacy omission preserved', () => {
+  for (const prepTimer of [true, false]) {
+    const opts = wireOptions({ prepTimer, roomCode: 'TEST', send() {}, data: { private: true } });
+    assert.equal(opts.prepTimer, prepTimer);
+    assert.deepEqual(JSON.parse(JSON.stringify(opts)), { roomCode: 'TEST', prepTimer });
+    assert.equal(Object.hasOwn(opts, 'send'), false);
+    assert.equal(Object.hasOwn(opts, 'data'), false);
+  }
+  assert.equal(Object.hasOwn(wireOptions({}), 'prepTimer'), false);
+});
 
 test('prep timer protocol accepts booleans only; old servers hide the new checkbox', () => {
   for (const on of [true, false]) assert.equal(validateC2S({ t: 'room.setPrepTimer', on }), null);

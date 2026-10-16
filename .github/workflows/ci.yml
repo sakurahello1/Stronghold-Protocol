@@ -14,15 +14,21 @@ permissions:
 
 jobs:
   test:
-    name: test (${{ matrix.os }}, node ${{ matrix.node }})
+    name: test (${{ matrix.os }}, node ${{ matrix.node }}${{ matrix.label }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
         # 22 and 24 = the maintained LTS lines (24 is what `winget install OpenJS.NodeJS.LTS` installs today)
-        node: [22, 24]
+        # Only Windows/22 needs file-level sharding to fit the unchanged 25-minute job limit.
+        # Both shards use Node's full test discovery; no test, seed or assertion is dropped.
+        include:
+          - {os: ubuntu-latest, node: 22, test-args: '', label: ''}
+          - {os: ubuntu-latest, node: 24, test-args: '', label: ''}
+          - {os: windows-latest, node: 24, test-args: '', label: ''}
+          - {os: windows-latest, node: 22, test-args: '--test-shard=1/2', label: ', shard 1/2'}
+          - {os: windows-latest, node: 22, test-args: '--test-shard=2/2', label: ', shard 2/2'}
     env:
       # Browser/E2E suites gate themselves on these (and on a local Chrome + downloaded game assets, which CI never
       # has): keep them off explicitly. Suites that need .cache/gamedata, public/assets or data/local-assets.json skip.
@@ -45,7 +51,7 @@ jobs:
         run: node tools/setup.mjs --check --no-local
 
       - name: Unit & integration tests
-        run: node --test
+        run: node --test ${{ matrix.test-args }}
 
       - name: Server smoke test (boot, /healthz, index.html, doctor)
         shell: bash
@@ -67,7 +73,7 @@ jobs:
           node tools/doctor.mjs || true
           kill $pid || true
 
-  # Separate from the test matrix so lint / types / import boundaries run once, not four times.
+  # Separate from the test matrix so lint / types / import boundaries run once, not five times.
   # Lint warnings do not fail the job (npm run lint does not pass --max-warnings=0).
   tooling:
     name: tooling (lint, imports, typecheck)

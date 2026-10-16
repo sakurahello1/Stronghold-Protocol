@@ -80,6 +80,10 @@ test('closing and reopening a real match restores its scene and operator models'
     t.diagnostic(`Initial ${JSON.stringify(await stats())}`);
     for (const delayed of (process.env.RECONNECT_DELAY === '1' ? [false, true] : [false, false])) {
       await page.close(); page = await open(delayed);
+      // A fresh tab in 0.3.0 explicitly recovers a saved seat; keep its normal identity and claim checks.
+      await page.waitForFunction(code => window.__SP__.store.get().room?.code === code ||
+        document.querySelector('[data-testid="resume-local-match"]'), {}, identity.code);
+      if (await page.$('[data-testid="resume-local-match"]')) await page.click('[data-testid="resume-local-match"]');
       await page.waitForFunction(({ id, code }) => {
         const state = window.__SP__.store.get(); return state.me.playerId === id && state.room?.code === code && state.match.public?.phase === 'PREP';
       }, {}, identity);

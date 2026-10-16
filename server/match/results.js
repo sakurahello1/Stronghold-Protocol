@@ -117,6 +117,7 @@ export function buildResult(m, outcome) {
       alive: ps.alive,
       victory: cleared,
       roundsPassed,
+      creditedKills: ps.creditedKills,
       eliminatedRound: ps.eliminatedRound,
       lp: Math.max(0, ps.lp),
       lpAtFinal: Number.isFinite(ps.lpAtFinal) ? Math.max(0, ps.lpAtFinal) : null,

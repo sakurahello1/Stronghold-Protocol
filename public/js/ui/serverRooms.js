@@ -54,7 +54,8 @@ export function ServerRooms({ online, busy, onJoin, onSpectate }) {
         <thead><tr><th>${t('房主')}</th><th>${t('模拟方式')}</th><th>${t('人数')}</th><th>${t('状态')}</th><th>${t('操作')}</th></tr></thead>
         <tbody>${rooms.map(room => html`<tr key=${room.code} data-room=${room.code}>
           <td><span class="server-rooms__host" title=${room.hostName}>${room.hostName}</span><small class="num">${room.code}</small></td>
-          <td>${room.mode === 'solo' ? t('独立模拟') : t('同盟模拟')} · ${t(DIFFICULTY_NAMES[room.difficulty] || room.difficulty)}</td>
+          <td>${room.mode === 'solo' ? t('独立模拟') : t('同盟模拟')} · ${room.modeName || t(DIFFICULTY_NAMES[room.difficulty] || room.difficulty)}
+            ${room.modded ? html`<small>${t('非官方')}</small>` : null}</td>
           <td class="num">${room.players}/${room.capacity}</td>
           <td><span class=${`server-rooms__status${room.inMatch ? ' is-running' : ''}`}>${room.inMatch ? t('游戏中') : t('准备中')}</span></td>
           <td><div class="server-rooms__actions">

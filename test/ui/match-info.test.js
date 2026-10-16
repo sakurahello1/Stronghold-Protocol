@@ -79,6 +79,29 @@ test('matchInfoModel: the two greyed kinds, the briefing order, banned operators
   assert.deepEqual([empty.bonds.length, empty.banned.length, empty.sets.drawn.size, empty.sets.off.size], [0, 0, 0, 0]);
 });
 
+test('affected alliances have one avatar row each, with explicit banned and available portrait states', () => {
+  const m = model();
+  const view = AffectedBondOperators({ model: m });
+  const rows = [...walk(view)].filter(v => hasClass(v, 'brief-availability__row'));
+  assert.equal(rows.length, m.affectedBonds.length);
+  assert.ok(rows.length > 0);
+  assert.equal(new Set(rows.map(v => v.props['data-bond'])).size, rows.length);
+  for (const [i, row] of rows.entries()) {
+    const expected = m.affectedBonds[i];
+    assert.ok(expected.banned.length > 0);
+    assert.equal(row.props['data-bond'], expected.bond.bondId);
+    const portraits = [...walk(row)].filter(v => v.type === UnitThumb);
+    assert.deepEqual(portraits.map(v => v.props.id), [...expected.banned, ...expected.available]);
+    assert.equal(new Set(portraits.map(v => v.props.id)).size, portraits.length);
+    for (const portrait of portraits) {
+      assert.equal(portrait.props.dim, expected.banned.includes(portrait.props.id));
+      assert.equal(portrait.props.showTier, false);
+    }
+    assert.equal(textOf(row), expected.bond.name, 'members are portraits, not a text roster');
+  }
+  assert.equal(AffectedBondOperators({ model: matchInfoModel(null) }), null);
+});
+
 test('MatchBondRow: greyed by state (✕ disc), the banned-member badge, the red ring on an enabled bond that lost members, the tip', () => {
   const m = model();
   const row = MatchBondRow({ title: '附加盟约', micro: 'ADD-ON BONDS', bonds: m.addon, model: m });

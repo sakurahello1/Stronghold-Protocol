@@ -123,3 +123,26 @@ test('directory pages are bounded, stable, and do not mutate room state', () => 
   assert.equal(new Set(frames.flatMap(f => f.rooms.map(r => r.code))).size, 45);
   assert.equal(lobby.rooms.size, 45);
 });
+
+test('gameplay-plugin directory rows show the selected mode without exposing content or settings', () => {
+  const lobby = new Lobby({ registry: {} });
+  const room = new Room('MOD1', 'coop', 'HARD', 0);
+  room.hostId = 'private-id';
+  room.seats[0] = { playerId: room.hostId, name: 'Plugin Host', left: false };
+  room.content = { vanilla: false, cs: 'a'.repeat(64), modeId: 'mode_x_test',
+    modes: [{ id: 'mode_x_test', name: 'Custom <mode> ' + 'x'.repeat(100) }],
+    plugins: [{ id: 'test', settings: { secret: 'not-in-directory' } }] };
+  lobby.rooms.set(room.code, room);
+  let frame;
+  const session = { connected: true, ws: { readyState: 1, bufferedAmount: 0, send: raw => { frame = JSON.parse(raw); } } };
+  lobby.listRooms(session);
+  const row = frame.rooms[0];
+  assert.equal(row.modded, true);
+  assert.equal(row.modeName, room.content.modes[0].name.slice(0, 80));
+  assert.equal(row.canJoin, true);
+  assert.equal(row.canSpectate, true);
+  for (const privateValue of [room.hostId, room.content.cs, 'not-in-directory']) {
+    assert.equal(JSON.stringify(frame).includes(privateValue), false);
+  }
+  for (const key of ['cs', 'plugins', 'settings', 'content', 'modeId']) assert.equal(Object.hasOwn(row, key), false);
+});
