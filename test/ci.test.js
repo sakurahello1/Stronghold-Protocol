@@ -11,7 +11,8 @@ import {
   parseArgs, parseWorkflow, selectSteps, stepEnv,
 } from '../tools/ci.mjs';
 
-const workflow = parseWorkflow(fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8'));
+const workflowText = fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8');
+const workflow = parseWorkflow(workflowText);
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
 /** ci.yml's smoke run block as smoke() in tools/ci.mjs mirrors it (lines trimmed, comments dropped). */
@@ -53,6 +54,9 @@ test('the commands match ci.yml: the run lines, the npm scripts ci.yml calls, th
     if (l.npm) {
       assert.equal(r, `npm run ${l.npm}`, l.id);
       assert.equal(pkg.scripts[l.npm], l.describe, `package.json script ${l.npm} is what ${l.id} runs`);
+    } else if (l.id === 'test') {
+      // Local CI runs the complete corpus once; the matrix partitions only Windows/22 into two complete shards.
+      assert.equal(r, l.describe + ' ${{ matrix.test-args }}', l.id);
     } else if (l.id !== 'smoke') assert.equal(r, l.describe, l.id);
   }
   const smokeRun = run('test', STEPS.find((s) => s.id === 'smoke').ci.name);
@@ -73,6 +77,24 @@ test('the commands match ci.yml: the run lines, the npm scripts ci.yml calls, th
     assert.ok(!s.shell || l.id === 'smoke', `${l.id}: shell: ${s.shell}`);
   }
   assert.equal(pkg.scripts.ci, 'node tools/ci.mjs');
+});
+
+test('only Windows/22 is sharded, with both halves and the unchanged 25-minute limit', () => {
+  const matrix = /      matrix:\r?\n([\s\S]*?)    env:/.exec(workflowText)?.[1];
+  assert.ok(matrix, 'the test matrix exists');
+  const rows = matrix.split(/\r?\n/).map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('#') && line !== 'include:');
+  const entries = rows.map((row) => {
+    const match = /^- \{os: ([\w-]+), node: (\d+), test-args: '([^']*)', label: '([^']*)'\}$/.exec(row);
+    assert.ok(match, `unrecognized test matrix entry: ${row}`);
+    return match.slice(1);
+  });
+  assert.deepEqual(entries, [
+    ['ubuntu-latest', '22', '', ''], ['ubuntu-latest', '24', '', ''], ['windows-latest', '24', '', ''],
+    ['windows-latest', '22', '--test-shard=1/2', ', shard 1/2'],
+    ['windows-latest', '22', '--test-shard=2/2', ', shard 2/2'],
+  ]);
+  assert.match(workflowText, /  test:\r?\n[\s\S]*?    timeout-minutes: 25\r?\n/);
 });
 
 test('the workflow reader: jobs, flat env, named and uses steps, run blocks; comments and nested blocks skipped, other step keys named', () => {

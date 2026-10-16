@@ -35,6 +35,7 @@ npm run lint && npm run check:imports && npm run typecheck       # 代码检查�
 依次是 setup 检查、`node --test`、服务器冒烟测试（在空闲端口启动、请求 `/healthz` 和首页、运行 doctor，然后关掉）、lint、导入边界、
 类型；第一步失败就停下并打印每步结果和耗时。`--keep-going` 失败后继续，`--only lint,test` 只跑指定步骤，`--list` 列出步骤。
 不包含 `npm ci`（依赖请自己装），也不跑 Node 版本 × 系统的矩阵。
+CI 仅在 Windows + Node 22 上将完整用例分成两批并行（`--test-shard=1/2`、`--test-shard=2/2`），每批仍为 25 分钟；本地 `npm run ci` 仍一次运行完整用例。
 
 浏览器测试默认不跑，需要本机 Chrome（路径不标准时设置 `CHROME_PATH`），用环境变量打开：
 

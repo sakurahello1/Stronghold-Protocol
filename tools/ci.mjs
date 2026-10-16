@@ -19,6 +19,7 @@
 //
 // Not mirrored: actions/checkout and actions/setup-node (GitHub runner setup) and `npm ci` (the install — run it
 // yourself; replacing node_modules is not a check). The OS × Node matrix is whatever this machine has.
+// Windows/22 CI partitions `node --test` into --test-shard=1/2 and 2/2; local CI runs their full union once.
 // Every child is `process.execPath` with a script path (eslint and tsc from node_modules/<pkg>/package.json `bin`),
 // never npm or a shell, so the run does not depend on PATH or on the shell npm uses for scripts.
 // test/ci.test.js keeps this list and ci.yml in step: a ci.yml step this file does not know fails it.
