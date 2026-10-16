@@ -5,7 +5,7 @@
 // only official ids (skills, kits, bonds, garrisons) are real.
 // A cosmetic product must resolve through createVisualSets with no problems and no warnings. A content product must
 // come back from buildContentSet with an empty problems list. There is no buildVisualSet symbol.
-import { test } from 'node:test';
+import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -27,8 +27,17 @@ import { DataSource } from '../../server/sim/simdata.js';
 import { setGameData } from '../../server/sim/content/support/index.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const FIXTURES = path.join(ROOT, 'test', 'fixtures', 'forge');
-const BAIT = '/tmp/sp-forge-bait-wp-h.txt';
+// Executable bait belongs outside test/: Node's default discovery executes every .js there.
+const FIXTURES = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-forge-fixtures-'));
+fs.cpSync(path.join(ROOT, 'test', 'fixtures', 'forge'), FIXTURES, { recursive: true });
+after(() => fs.rmSync(FIXTURES, { recursive: true, force: true }));
+const BAIT = path.join(FIXTURES, 'executed.txt');
+for (const rel of ['mixed-pack/kits/boom.js', 'mixed-pack/panels/hud.js', 'mixed-pack/panels/over.js',
+  'mixed-pack/server/pre.js', 'numbers-pack/kits/guard.js']) {
+  const file = path.join(FIXTURES, rel);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, `import { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(BAIT)}, 'executed\\n');\n`);
+}
 const vanilla = readVanillaAssets(path.join(ROOT, 'data'));
 
 const quiet = async (argv) => {
@@ -476,10 +485,10 @@ test('two language codes that canonicalise together are refused and write nothin
   const pack = path.join(parent, 'pack');
   writePack(pack, {
     id: 'lang-alias', name: '别名', version: '1.0.0', license: 'CC0-1.0', content: [],
-    i18n: { en: 'i18n/en.json', EN: 'i18n/EN.json' },
+    i18n: { en: 'i18n/en.json', EN: 'i18n/upper.json' },
   }, {
     'i18n/en.json': JSON.stringify({ hello: 'hi' }),
-    'i18n/EN.json': JSON.stringify({ hello: 'HI' }),
+    'i18n/upper.json': JSON.stringify({ hello: 'HI' }),
   });
   try {
     const got = await importForge(pack, { ...forgeOpts(parent), out: path.join(parent, 'lang-alias') });
@@ -1063,7 +1072,7 @@ test('a kit whose import does not map, that fails the script check, or uses synt
     chess: { ...pairOf('rose_dir'), ...pairOf('rose_fs'), ...pairOf('rose_date'), ...pairOf('rose_async'), ...pairOf('rose_tier') },
     kits: {
       'kits/chess_rose_dir_a.js': "import { dirVec } from '@sim/dir.js';\nexport default function kit() { return { skill: null, x: dirVec }; }\n",
-      'kits/chess_rose_fs_a.js': `import { writeFileSync } from 'node:fs';\nwriteFileSync('${BAIT}', 'executed\\n');\nexport default function kit() { return {}; }\n`,
+      'kits/chess_rose_fs_a.js': `import { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(BAIT)}, 'executed\\n');\nexport default function kit() { return {}; }\n`,
       'kits/chess_rose_date_a.js': 'export default function kit() { return { skill: { kind: "passive", mods: { atkPct: Date.now() % 2 } } }; }\n',
       'kits/chess_rose_async_a.js': 'export default async function kit() { return {}; }\n',
       'kits/chess_rose_tier_a.js': "import { selectedId } from '@kit/tier3.js';\nexport default function kit() { return { x: selectedId }; }\n",

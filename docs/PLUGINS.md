@@ -866,7 +866,8 @@ page with `?cs=<cs>&room=<room>` and the restored, consenting page imports the c
 code; native imports cannot revoke side effects. Server entry changes take effect on restart.
 
 **Author tests.** `node tools/plugin.mjs test <id>` explicitly executes that installed plugin's `test/*.test.js` with
-its composition preloaded, SDK registrations installed and the official bounds set. Tests may import
+its composition preloaded, SDK registrations installed and the official bounds set. The command uses the TAP reporter
+on both supported Node versions; its preload is a file URL, including on Windows and in paths containing spaces. Tests may import
 `../../../test/helpers/battleHarness.js`; they are test code, not portability-scanned entry modules. Production trust
 gates remain unchanged. This command is explicit authorization to execute local code: it does not require
 `SP_PLUGIN_SCRIPTS` or a matching `plugins/config.json` trusted pin (a missing/stale pin does not stop it). Review the

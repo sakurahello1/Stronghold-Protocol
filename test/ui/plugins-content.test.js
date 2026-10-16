@@ -375,6 +375,8 @@ describe('the runner\'s cs check (public/js/battle/runner.js)', () => {
     const state = { held: null, loading: 'cd'.repeat(32) };
     const r = rig({ state, contentFor: async (cs) => { await tick(); state.held = { cs, data: DATA }; state.loading = null; return state.held; } });
     r.net.emit('b.start', s);
+    // Complete the real timer before advancing sixty seconds on the fake battle clock.
+    await until(() => state.held != null, 'the pending content set');
     await r.run(60_000);
     const e = r.runner._entries.get(s.battleId);
     assert.equal(e.authoritative, true, 'kept while the page loaded the set, confirmed once it was there');
