@@ -36,4 +36,14 @@ Part of [DESIGN.md](../DESIGN.md) (the index; section numbers are global).
 - Prep/draft timers are **real seconds**, stored as absolute server deadlines (`Date.now()`-based) and sent to clients as `deadline` (ms epoch) + `serverNow` for clock-offset correction.
 - Snapshots to clients: every **3 ticks** (= 20 Hz real) per watched field.
 
+**Custom fork, 2026-10-16 user request:** the top-right 2× vote (META §1.3b) doubles the existing rate only in
+COMBAT/UNITE (normally 120 fixed ticks per real second). It never changes TICK, spawn schedules or battle limits
+in game seconds. max(1, N-1) alive non-left humans must select it; temporarily disconnected humans still count
+[ASSUMED]. Choices persist across rounds and can be withdrawn. Elimination/departure recomputes the electorate.
+Changing rate preserves elapsed game time, scales only the remaining combat deadline/release time, and leaves
+the 15-real-second result grace intact. Prep/draft, boss/hidden clocks, settlement and solo pause keep their
+existing behavior. The HUD retains its original countdown range, consuming it twice as quickly when active.
+`b.speed` updates existing/pending browser entries without resetting the battle or renderer; reconnect uses the
+current `b.start` rate. Spectators see the shared state but cannot vote. No deterministic simulation rule changes.
+
 ---

@@ -704,6 +704,22 @@ export function createBattleRunner(deps) {
 
   function yieldFrame() { return new Promise((resolve) => { if (hidden()) setTimeout(resolve, 0); else raf(() => resolve()); }); }
 
+  /** Retiming never rebuilds a sim or changes its ticks: only the wall-clock origin and playback rate change. */
+  function retime(e, speed, elapsed) {
+    e.speed = speed;
+    e.elapsed = Math.max(0, Number(elapsed) || 0);
+    if (e.t0 != null) e.t0 = clock() - e.elapsed / speed * 1000;
+  }
+
+  function onSpeed(msg) {
+    if (!msg || !Number.isFinite(msg.speed) || msg.speed <= 0 || !Number.isFinite(msg.elapsed) || msg.elapsed < 0) return;
+    const e = entries.get(msg.battleId) || pending.get(msg.battleId);
+    if (!e || e.failed || e.done || (e.kind !== 'normal' && e.kind !== 'unite')) return;
+    retime(e, msg.speed, msg.elapsed);
+    if (e === cur || e === loading) publishState();
+    schedule();
+  }
+
   async function onStart(msg) {
     if (!msg || typeof msg !== 'object' || !msg.spec || typeof msg.battleId !== 'string') return;
     const speed = Number(msg.speed) > 0 ? Number(msg.speed) : 2;
@@ -711,6 +727,8 @@ export function createBattleRunner(deps) {
     const prep = pending.get(msg.battleId);
     const existing = entries.get(msg.battleId) || prep;
     if (existing) {
+      // A resync repairs missed rate changes, even a complete on/off cycle while this field was not watched.
+      if (existing.kind === 'normal' || existing.kind === 'unite' || existing.speed !== speed) retime(existing, speed, msg.elapsed);
       existing.seq = seq;
       const was = existing.authoritative;
       existing.authoritative = !!msg.authoritative && !existing.failed && !existing.resultSent && csAccepted(existing.spec.cs, { loading: !existing.battle });
@@ -915,6 +933,7 @@ export function createBattleRunner(deps) {
   if (net && typeof net.on === 'function') {
     offs.push(net.on('b.start', (m) => { onStart(m).catch((err) => console.warn('[runner] b.start failed', err)); }));
     offs.push(net.on('b.pool', onPool));
+    offs.push(net.on('b.speed', onSpeed));
     offs.push(net.on('b.end', onEnd));
     // the session is back (reconnect / resume): results lost with the old socket go out again
     offs.push(net.on('status', (st) => { if (st && st.status === 'online') redeliver(); }));

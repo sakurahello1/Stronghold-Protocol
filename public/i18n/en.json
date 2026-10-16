@@ -1822,5 +1822,12 @@
   "其余 {n} 个已移到 plugins/_removed/。": "The other {n} {n|was|were} moved to plugins/_removed/.",
   "已移到 plugins/_removed/：{n} 个插件": "Moved to plugins/_removed/: {n} {n|plugin|plugins}",
   "选中「{name}」": "Select \"{name}\"",
-  "符号链接的插件文件夹不能在这里删除。": "A plugin folder that is a symbolic link cannot be deleted here."
+  "符号链接的插件文件夹不能在这里删除。": "A plugin folder that is a symbolic link cannot be deleted here.",
+  "2倍速": "2× speed",
+  "已启用2倍速（{votes}/{required}票）": "2× speed active ({votes}/{required} votes)",
+  "已达票数，将在个人防御和联防阶段加速": "Vote passed; speeds up personal and joint defense",
+  "等待启用2倍速（{votes}/{required}票）": "Waiting for 2× speed ({votes}/{required} votes)",
+  "仅仍在对局中的真人玩家可投票": "Only human players still in the match can vote",
+  "已选择启用2倍速，点击撤回": "Voted for 2× speed; click to withdraw",
+  "投票启用2倍速": "Vote for 2× speed"
 }
