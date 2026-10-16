@@ -210,6 +210,19 @@ always. While paused (`m.public.paused`) the field clocks, the authority deadlin
 fields' `startAt` / `lastProgressAt` and the boss start by the paused time and re-arms the timers. A disconnect or
 `onLeave` resumes; the battle phase ending clears it (`pausedMs` totals the paused time).
 
+### 1.3b Custom fork: combat speed vote
+
+`g.combatSpeed { on: boolean }` selects/withdraws a persistent per-match vote. `m.public.combatSpeedVote` exposes
+`eligible`, `voters`, `required`, `enabled`, `active`, `speed`. The server requires max(1, N-1) selections, with
+N = alive non-left human seats, including temporary disconnects [ASSUMED]. Only COMBAT and UNITE live fields use
+twice their existing speed (normally 2 → 4 game seconds per real second); other phases retain their original rate.
+The top-right button distinguishes the local selection from the shared active state and shows votes/required.
+Rate transitions preserve game elapsed time, fixed ticks and specs. `b.speed { battleId, fieldId, speed, elapsed,
+serverNow }` retimes existing client entries (including pending workers and observer replicas) without re-entering
+the field. Reconnect uses the current `b.start.speed/elapsed`. Server-streamed fields use the same rate; headless
+results retain their outcome and move only their release clock. The 15-real-second result grace is not multiplied.
+Solo pause freezes this clock too. This is a custom-fork user request (2026-10-16), not an official rule.
+
 ### 1.4 Watching fields
 Client-side combat (the default, DESIGN §14 Spectating; `Match._watchClient`): `g.watch` answers with the field's
 `b.start` (a display replica fast-forwarded to the field clock); an alive player may not watch another normal field

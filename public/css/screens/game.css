@@ -73,6 +73,13 @@
 .gtop__right .countdown { --cd-h: .7rem; filter: drop-shadow(0 0 .12rem rgba(0, 0, 0, .8)); }
 .gtop__clock { display: flex; align-items: flex-start; gap: .14rem; }
 
+/* Custom combat-speed ballot, above the existing right-side clock/ready controls. */
+.speedvote { display: flex; align-items: center; justify-content: center; gap: .08rem; min-height: 32px; padding: .06rem .12rem; border: 1px solid var(--line); background: rgba(10, 14, 12, .9); color: var(--text-hi); cursor: pointer; white-space: nowrap; font-size: max(12px, .17rem); }
+.speedvote small { font-size: max(11px, .14rem); color: var(--text-dim); }
+.speedvote.is-selected { border-color: var(--mint-500); color: var(--mint-400); }
+.speedvote.is-active { background: var(--mint-a20); box-shadow: 0 0 .12rem rgba(23, 249, 183, .25); }
+.speedvote:disabled { cursor: default; opacity: .6; }
+
 /* solo pause / resume (ui/hud.js PauseButton, official battle pause: two bars on a dark square) */
 .pausebtn {
   display: grid; place-items: center; width: .6rem; height: .6rem; flex: none;

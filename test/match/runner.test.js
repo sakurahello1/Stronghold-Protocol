@@ -18,6 +18,59 @@ import { DATA, makeMatch } from './harness.js';
 
 const DS = new DataSource(DATA, null);
 
+test('b.speed received while a Worker is loading is retained by the pending battle', async () => {
+  let release;
+  const loaded = new Promise(resolve => { release = resolve; });
+  const battle = { finished: true, time: 3, tickCount: 90, flags: {}, allyUnits: [],
+    snapshot: () => ({ t: 3 }), drainEvents: () => [], fieldMeta: () => ({ units: [] }) };
+  const host = { remote: true, battle, meter: { lp: 0 }, load: () => loaded, async start() {}, stop() {},
+    progress: () => ({ gt: 3, killed: 0, total: 0, done: true }), compactResult: () => null,
+    step: () => Promise.resolve({ ticks: 0, slices: [] }) };
+  const r = rig({ createHost: () => host });
+  try {
+    const spec = { fieldId: 'n:pending', kind: 'normal', players: [{ playerId: 'p_0' }] };
+    r.net.emit('b.start', { battleId: 'pending-speed', fieldId: spec.fieldId, kind: 'normal', spec, authoritative: false, watch: true, speed: 2 });
+    r.net.emit('b.speed', { battleId: 'pending-speed', fieldId: spec.fieldId, speed: 4, elapsed: 3 });
+    release(); await r.settle();
+    const e = r.runner._entries.get('pending-speed');
+    assert.ok(e && !e.failed); assert.equal(e.speed, 4); assert.equal(e.elapsed, 3);
+    assert.equal(r.store.get().match.battle.speed, 4);
+    assert.equal(r.net.sent.length, 0, 'observer replica never submits a result');
+  } finally { release(); r.runner.dispose(); }
+});
+
+test('mid-battle b.speed retimes the existing sim and feed, preserves ticks, and accepts speed on reconnect', async () => {
+  const start = realStart(7366);
+  const r = rig();
+  try {
+    r.net.emit('b.start', start); await r.settle();
+    const e = r.runner._entries.get(start.battleId); const battle = e.battle;
+    r.advance(1000); const first = battle.tickCount;
+    r.net.emit('b.speed', { battleId: start.battleId, fieldId: start.fieldId, speed: 4, elapsed: 2 });
+    assert.equal(battle.tickCount, first, 'rate message never steps or resets the sim');
+    assert.equal(r.store.get().match.battle.speed, 4);
+    assert.equal(r.feed.fields.length, 1, 'no field re-entry or actor reset');
+    r.advance(1000); assert.ok(Math.abs(battle.tickCount - first - 120) <= 2, '120 fixed ticks per real second');
+    const second = battle.tickCount;
+    r.net.emit('b.start', { ...start, speed: 2, elapsed: 6 }); await r.settle();
+    assert.equal(e.battle, battle, 'reconnect retains the existing sim');
+    r.advance(1000); assert.ok(Math.abs(battle.tickCount - second - 60) <= 2);
+    assert.equal(r.feed.fields.length, 1);
+    r.net.emit('b.speed', { battleId: 'stale', speed: 4, elapsed: 0 });
+    r.net.emit('b.speed', { battleId: start.battleId, speed: -1, elapsed: 0 });
+    assert.equal(e.speed, 2, 'invalid/stale messages ignored');
+    // While not watched, a replica can miss a complete 2 → 4 → 2 cycle. Same-rate resync still needs a new origin.
+    r.net.emit('b.start', { ...start, speed: 2, elapsed: 10 }); await r.settle();
+    assert.ok(Math.abs(e.t0 - (r.t - 5000)) < 0.001, 'same-speed resync adopts the authoritative field clock');
+    for (let i = 0; i < 400 && !e.done; i++) r.advance(1000, 50);
+    await r.settle();
+    const res = r.net.sent.find(x => x.t === 'b.result');
+    assert.ok(res, 'changing speed still finishes and reports');
+    const server = runHeadless(specMod.createBattleFromSpec(start.spec, DS, { recordEvents: false }), { players: start.spec.players.map(p => p.playerId) }).result;
+    assert.equal(specMod.resultDigest(res.result).hash, specMod.resultDigest(specMod.compactResult(server)).hash, 'identical result at either speed');
+  } finally { r.runner.dispose(); }
+});
+
 function fakeNet() {
   const handlers = new Map();
   const n = {
