@@ -37,7 +37,7 @@ test('same script battle is bit-identical in match child and loadBrowserSim, spe
  const spectator=await loadContentSet(built.cs,{fetch,retryDelays:[]});assert.equal(spectator.canSim,false);assert.equal(spectator.scripts.length,0);assert.ok(!calls.some(x=>x.includes('/scripts/')));
  const accepted=await loadContentSet(built.cs,{fetch,consent:true,retryDelays:[]});assert.equal(accepted.scripts.length,1);
  const runtime=path.join(f.root,'runtime');fs.mkdirSync(path.join(runtime,'server'),{recursive:true});
- fs.cpSync('server/sim',path.join(runtime,'server/sim'),{recursive:true,filter:src=>!src.endsWith('/nodeData.js')});
+ fs.cpSync('server/sim',path.join(runtime,'server/sim'),{recursive:true,filter:src=>path.basename(src)!=='nodeData.js'});
  fs.cpSync('shared',path.join(runtime,'shared'),{recursive:true});
  fs.writeFileSync(path.join(runtime,'package.json'),'{"type":"module"}');fs.writeFileSync(path.join(runtime,'server/data.js'),DATA_SHIM_JS);
  const base=pathToFileURL(path.join(runtime,'server/sim')).href+'/';
