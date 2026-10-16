@@ -15,7 +15,7 @@ describe('renderer recovery after transient resource failures', { skip: !enabled
     srv = await startServer({ port: 0, host: '127.0.0.1', quiet: true, MatchClass: RecoveryMatch, seedFn: () => 123 });
     const P = (await import('puppeteer-core')).default;
     browser = await P.launch({ executablePath: CHROME, headless: true,
-      args: ['--no-first-run', '--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] });
+      args: ['--no-first-run', ...(process.platform === 'darwin' ? ['--use-angle=metal'] : []), '--enable-gpu', '--ignore-gpu-blocklist'] });
     mkdirSync(new URL('../e2e/out/', import.meta.url), { recursive: true });
   });
   after(async () => { await browser?.close(); await srv?.close(); });
@@ -128,6 +128,9 @@ describe('renderer recovery after transient resource failures', { skip: !enabled
   for (const resource of ['atlas', 'three']) test(`${resource} download can recover the 3D board on visibility`, { skip: !art }, async () => {
     const page = await browser.newPage(); let failing = true, requests = 0;
     try {
+      // the imported-art service worker (public/sw.js, PR #628 — registered by an earlier page of this origin) would
+      // fetch the hashed atlas itself, past this page's request interception
+      await page.setBypassServiceWorker(true);
       await page.setRequestInterception(true);
       page.on('request', req => {
         const p = new URL(req.url()).pathname;
