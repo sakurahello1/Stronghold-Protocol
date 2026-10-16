@@ -37,10 +37,20 @@ function randomIntent(rng, m, ps) {
     case 'g.emote': return { t, id: rng.pick(EMOTES) };
     case 'g.watch': return { t, fieldId: rng.pick(['n:p_0', 'n:p_1', 'n:ai_0', 'u', 'b1', 'b2', 'zz', '']) };
     case 'g.autoplay': return { t, on: rng() < 0.05 };
-    case 'g.pause': return { t, on: rng() < 0.5 };
+    case 'g.pause': case 'g.combatSpeed': return { t, on: rng() < 0.5 };
     default: return { t };
   }
 }
+
+test('every game-intent generator supplies its required protocol fields', () => {
+  for (const type of GAME) {
+    const rng = createRng(1);
+    const pick = rng.pick;
+    rng.pick = values => values === GAME ? type : pick(values);
+    const msg = randomIntent(rng, { setupRevision: 0 }, null);
+    assert.equal(validateC2S(msg), null, `generator for ${type}: ${JSON.stringify(msg)}`);
+  }
+});
 
 function fuzzOne(seed, { fake }) {
   const rng = createRng(seed * 7919);
