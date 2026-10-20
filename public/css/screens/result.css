@@ -65,12 +65,7 @@
 .rcard__title .icon { width: .3rem; height: .3rem; color: var(--gold); }
 .rcard__mid { display: flex; flex-direction: column; justify-content: center; gap: .06rem; min-width: 0; }
 .rcard__lineup .uthumb { --ut: .46rem; }
-.rcard__lineup { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .05rem; }
-.rcard__unit { display: flex; flex-direction: column; align-items: center; gap: 3px; width: max(.46rem, 36px); }
-.rcard__unit > .uthumb { --ut: max(.46rem, 36px); }
-.rcard__equipment { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; width: 100%; }
-.rcard__equipment > span { display: flex; }
-.rcard__equipment .uthumb { --ut: max(.2rem, 16px); }
+.rcard__lineup { display: flex; flex-wrap: wrap; gap: .05rem; }
 .rcard__noinfo { font-family: var(--font-display); font-size: calc(.14 * var(--t)); letter-spacing: .3em; color: var(--text-dim); padding: .14rem .2rem; border: 1px dashed var(--line-2); }
 .rcard__bonds { display: flex; gap: .05rem; flex-wrap: wrap; }
 .rbond { display: inline-flex; align-items: center; gap: .04rem; padding: .01rem .07rem .01rem .03rem; border: 1px solid var(--line-2); font-size: calc(.13 * var(--t)); color: var(--text-lo); }
@@ -80,14 +75,9 @@
 .rstat { display: flex; align-items: baseline; justify-content: space-between; gap: .06rem; padding: .05rem .1rem; background: #0e1210; box-shadow: 0 0 0 1px var(--line); font-size: calc(.13 * var(--t)); color: var(--text-lo); white-space: nowrap; min-width: 0; }
 .rstat b { font-size: calc(.18 * var(--t)); color: #fff; }
 .rstat.is-best b { color: var(--gold); }
-.rstat--lp { flex-wrap: wrap; }
-.rstat--lp .rstat__lp-value { margin-left: auto; }
-.rstat--lp .rstat__lp-value b { font-size: max(calc(.16 * var(--t)), 12px); }
-@media (max-width: 640px) {
-  .rstat--lp { grid-column: span 2; }
-}
 .result__foot { flex: 0 0 auto; margin-top: auto; padding-top: .2rem; display: flex; }
 .result__foot .btn { min-width: 3.4rem; }
 
 /* a match with gameplay plugins (DESIGN §32.6): the unofficial mark under the headline */
 .result__modmark { align-self: flex-start; margin-top: .06rem; }
+.result__test { display: flex; align-items: center; gap: .08rem; margin: .08rem 0 0; color: #e8b84a; }

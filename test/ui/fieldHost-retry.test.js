@@ -13,6 +13,8 @@ function fixture({ kinds = ['fallback', 'engine'], forced = false } = {}) {
   const window = new EventTarget();
   const document = new EventTarget(); document.visibilityState = 'visible';
   const navigator = { onLine: true };
+  let storeState = { me: { playerId: 'analysis-me' }, match: { public: { players: [{ playerId: 'analysis-me', skins: {} }] } } };
+  let onStore = null;
   let cursor = 0, queued = false, mounted = true, cleanup, effect, state, timerId = 0;
   const rerender = () => {
     if (!mounted || queued) return;
@@ -24,6 +26,7 @@ function fixture({ kinds = ['fallback', 'engine'], forced = false } = {}) {
     location: { search: forced ? '?render=fallback' : '' },
     console: { error() {}, warn() {} },
     settingsStore: { subscribe: () => () => {} },
+    store: { get: () => storeState, subscribe: fn => { onStore = fn; return () => { onStore = null; }; } },
     useState(initial) {
       const i = cursor++; if (!(i in slots)) slots[i] = initial;
       return [slots[i], value => { const next = typeof value === 'function' ? value(slots[i]) : value;
@@ -38,7 +41,7 @@ function fixture({ kinds = ['fallback', 'engine'], forced = false } = {}) {
     clearTimeout(id) { timers.delete(id); },
     mountAttempt(_host, { signal }) {
       const view = { kind: kinds[Math.min(attempts.length, kinds.length - 1)], destroyed: 0,
-        destroy() { this.destroyed++; }, resize() {} };
+        destroy() { this.destroyed++; }, resize() {}, setMe(id) { this.me = id; }, setSkins(players) { this.skins = players; } };
       attempts.push(signal); views.push(view); return Promise.resolve(view);
     },
   });
@@ -56,6 +59,7 @@ function fixture({ kinds = ['fallback', 'engine'], forced = false } = {}) {
       const [id, timer] = entry; timers.delete(id); timer.fn(); },
     unmount() { mounted = false; cleanup?.(); },
     get exposed() { return context.__SP_VIEW__; },
+    updateStore(next) { const prev = storeState; storeState = next; onStore?.(next, prev); },
   };
 }
 
@@ -82,6 +86,16 @@ test('a long outage can recover on return even after the automatic retry budget 
   const f = fixture({ kinds: ['fallback', 'fallback', 'fallback', 'engine'] }); await flush();
   f.fire(); await flush(); f.fire(); await flush(); assert.equal(f.timers.size, 0);
   f.event('online'); await flush(); assert.equal(f.state.kind, 'engine'); assert.equal(f.attempts.length, 4);
+  f.unmount();
+});
+
+test('automatic recovery preserves v0.3.1 seat identity and live skin updates', async () => {
+  const f = fixture(); await flush(); f.fire(); await flush();
+  assert.equal(f.views[1].me, 'analysis-me');
+  const players = [{ playerId: 'next-player', skins: { char_example: 'skin_example' } }];
+  f.updateStore({ me: { playerId: 'next-player' }, match: { public: { players } } });
+  assert.equal(f.views[1].me, 'next-player'); assert.equal(f.views[1].skins, players);
+  assert.equal(f.attempts.length, 2, 'a skin update does not remount or reset the recovered battle');
   f.unmount();
 });
 

@@ -124,6 +124,17 @@ test('directory pages are bounded, stable, and do not mutate room state', () => 
   assert.equal(lobby.rooms.size, 45);
 });
 
+test('the public directory does not expose v0.3.1 test rooms through ordinary join controls', () => {
+  const lobby = new Lobby({ registry: {} });
+  const ordinary = new Room('LIVE', 'coop', 'NORMAL', 1), trial = new Room('TEST', 'coop', 'NORMAL', 2);
+  trial.test = true; lobby.rooms.set(ordinary.code, ordinary); lobby.rooms.set(trial.code, trial);
+  let frame;
+  const session = { connected: true, ws: { readyState: 1, bufferedAmount: 0, send: raw => { frame = JSON.parse(raw); } } };
+  lobby.listRooms(session);
+  assert.equal(frame.total, 1); assert.equal(frame.rooms[0].code, 'LIVE');
+  assert.equal(trial.test, true, 'the official test room and its acknowledgement gate remain intact');
+});
+
 test('gameplay-plugin directory rows show the selected mode without exposing content or settings', () => {
   const lobby = new Lobby({ registry: {} });
   const room = new Room('MOD1', 'coop', 'HARD', 0);

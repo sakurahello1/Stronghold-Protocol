@@ -7,12 +7,11 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  CI_TEST_ENV, ROOT, SKIPPED_CI_STEPS, SMOKE_PATHS, STEPS, binPath, formatDuration, formatSummary, isSkippedCiStep,
-  parseArgs, parseWorkflow, selectSteps, stepEnv,
+  CI_TEST_ENV, ROOT, SKIPPED_CI_STEPS, SMOKE_PATHS, STEPS, TEST_FILES, binPath, formatDuration, formatSummary,
+  isSkippedCiStep, parseArgs, parseWorkflow, selectSteps, stepEnv,
 } from '../tools/ci.mjs';
 
-const workflowText = fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8');
-const workflow = parseWorkflow(workflowText);
+const workflow = parseWorkflow(fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8'));
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
 /** ci.yml's smoke run block as smoke() in tools/ci.mjs mirrors it (lines trimmed, comments dropped). */
@@ -54,9 +53,6 @@ test('the commands match ci.yml: the run lines, the npm scripts ci.yml calls, th
     if (l.npm) {
       assert.equal(r, `npm run ${l.npm}`, l.id);
       assert.equal(pkg.scripts[l.npm], l.describe, `package.json script ${l.npm} is what ${l.id} runs`);
-    } else if (l.id === 'test') {
-      // Local CI runs the complete corpus once; the matrix partitions only Windows/22 into two complete shards.
-      assert.equal(r, l.describe + ' ${{ matrix.test-args }}', l.id);
     } else if (l.id !== 'smoke') assert.equal(r, l.describe, l.id);
   }
   const smokeRun = run('test', STEPS.find((s) => s.id === 'smoke').ci.name);
@@ -79,22 +75,23 @@ test('the commands match ci.yml: the run lines, the npm scripts ci.yml calls, th
   assert.equal(pkg.scripts.ci, 'node tools/ci.mjs');
 });
 
-test('only Windows/22 is sharded, with both halves and the unchanged 25-minute limit', () => {
-  const matrix = /      matrix:\r?\n([\s\S]*?)    env:/.exec(workflowText)?.[1];
-  assert.ok(matrix, 'the test matrix exists');
-  const rows = matrix.split(/\r?\n/).map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('#') && line !== 'include:');
-  const entries = rows.map((row) => {
-    const match = /^- \{os: ([\w-]+), node: (\d+), test-args: '([^']*)', label: '([^']*)'\}$/.exec(row);
-    assert.ok(match, `unrecognized test matrix entry: ${row}`);
-    return match.slice(1);
-  });
-  assert.deepEqual(entries, [
-    ['ubuntu-latest', '22', '', ''], ['ubuntu-latest', '24', '', ''], ['windows-latest', '24', '', ''],
-    ['windows-latest', '22', '--test-shard=1/2', ', shard 1/2'],
-    ['windows-latest', '22', '--test-shard=2/2', ', shard 2/2'],
-  ]);
-  assert.match(workflowText, /  test:\r?\n[\s\S]*?    timeout-minutes: 25\r?\n/);
+test('npm test runs every test file and nothing else under test/: no helper, no child-process entry, no Forge fixture', () => {
+  // the test step's command line is package.json's (checked above) and runs node --test over TEST_FILES
+  assert.equal(STEPS.find((s) => s.id === 'test').describe, `node --test ${TEST_FILES.map((g) => `"${g}"`).join(' ')}`);
+  // what Node's test runner expands them to (the same glob, node_modules left out the way --test leaves it out)
+  const picked = fs.globSync(TEST_FILES, { cwd: ROOT, exclude: (p) => path.basename(String(p?.name ?? p)) === 'node_modules' })
+    .map((f) => f.split(path.sep).join('/')).sort();
+  const walk = (dir) => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })
+    .flatMap((d) => (d.isDirectory() ? walk(`${dir}/${d.name}`) : [`${dir}/${d.name}`]));
+  const underTest = walk('test');
+  const tests = [...underTest, ...walk('plugins/_template')].filter((f) => f.endsWith('.test.js'));
+  assert.deepEqual(picked, [...tests, 'test/e2e/coop.e2e.mjs'].sort());
+  assert.ok(!picked.some((f) => /^test\/(fixtures|helpers)\/|\/fixtures\//.test(f)), 'a fixture or helper would run as a test');
+  // every other module under test/ is imported by the tests (or is untrusted bait): one that uses node:test is a test
+  // file the globs miss — name it *.test.js
+  for (const f of underTest.filter((x) => /\.[cm]?js$/.test(x) && !picked.includes(x))) {
+    assert.doesNotMatch(fs.readFileSync(path.join(ROOT, f), 'utf8'), /['"]node:test['"]/, `${f} uses node:test but npm test does not run it`);
+  }
 });
 
 test('the workflow reader: jobs, flat env, named and uses steps, run blocks; comments and nested blocks skipped, other step keys named', () => {

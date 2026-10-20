@@ -103,26 +103,6 @@ test('Final Assault: the result LP are the alive players\' shares of the merged 
   h2.m.dispose();
 });
 
-test('four-player results retain personal pre-boss LP and its original total after shared losses', () => {
-  const h = makeMatch({ mode: 'coop', difficulty: 'NORMAL', humans: 4, seed: 7, fake: true,
-    script: b => b.kind === 'boss' ? { bossDps: b.sharedBoss.maxHp / 8,
-      leakEvents: b.fieldId === 'b1' ? [{ at: 1, lpr: 7 }] : [] } : {} }).start();
-  try {
-    h.autoHumans();
-    h.drive(() => h.m.phase === PHASE.PREP && h.m.round === 14);
-    const before = [11, 22, 33, 44];
-    before.forEach((lp, i) => { h.ps(`p_${i}`).lp = lp; });
-    const result = h.runToEnd();
-    assert.equal(result.teamLpAtFinal, 110);
-    assert.equal(result.teamLp, 103);
-    for (const [i, lp] of before.entries()) {
-      const row = result.players.find(p => p.playerId === `p_${i}`);
-      assert.equal(row.lpAtFinal, lp);
-    }
-    assert.equal(result.players.reduce((sum, p) => sum + p.lp, 0), 103, 'official shared-pool LP accounting is unchanged');
-  } finally { h.m.dispose(); }
-});
-
 test('co-op trophies / victory follow each player\'s OWN rounds passed: a teammate eliminated in R6 gets the table value of 5 rounds, not the Hidden-Core row', async () => {
   const { buildResult } = await import('../../server/match/results.js');
   const h = makeMatch({ mode: 'coop', difficulty: 'HARD', humans: 2, seed: 5, fake: true }).start();
