@@ -18,6 +18,8 @@ test('mounted fields adopt public skins, follow updates and identity, and unsubs
     mountFieldView = async () => guardView(raw, 'engine');
     useFieldView({ current: {} });
   `, { store, settingsStore, raw, AbortController, console, window: events, document: events,
+    // Recovery adds browser timers to the hook; retain the full skin/unmount assertions with those globals present.
+    setTimeout, clearTimeout,
     useState: (s) => [s, () => {}], useRef: (s) => ({ current: s }),
     useEffect: (fn) => cleanups.push(fn()),
   });
