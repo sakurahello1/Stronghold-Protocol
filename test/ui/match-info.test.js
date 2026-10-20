@@ -24,7 +24,7 @@ globalThis.fetch = async (url) => {
   }
 };
 
-const { matchInfoModel, MatchBondRow, MatchLegend, BannedOperators, MatchInfo, MatchInfoDialog } = await import('../../public/js/ui/matchInfo.js');
+const { matchInfoModel, MatchBondRow, MatchLegend, BannedOperators, AffectedBondOperators, MatchInfo, MatchInfoDialog } = await import('../../public/js/ui/matchInfo.js');
 const { briefingBondTip } = await import('../../public/js/ui/gameLogic.js');
 const { BondDisc, Tooltip, Modal, Button } = await import('../../public/js/ui/components.js');
 const { UnitThumb } = await import('../../public/js/ui/gameComponents.js');
@@ -77,6 +77,29 @@ test('matchInfoModel: the two greyed kinds, the briefing order, banned operators
   // nothing loaded yet: empty, never throws
   const empty = matchInfoModel(null);
   assert.deepEqual([empty.bonds.length, empty.banned.length, empty.sets.drawn.size, empty.sets.off.size], [0, 0, 0, 0]);
+});
+
+test('affected alliances have one avatar row each, with explicit banned and available portrait states', () => {
+  const m = model();
+  const view = AffectedBondOperators({ model: m });
+  const rows = [...walk(view)].filter(v => hasClass(v, 'brief-availability__row'));
+  assert.equal(rows.length, m.affectedBonds.length);
+  assert.ok(rows.length > 0);
+  assert.equal(new Set(rows.map(v => v.props['data-bond'])).size, rows.length);
+  for (const [i, row] of rows.entries()) {
+    const expected = m.affectedBonds[i];
+    assert.ok(expected.banned.length > 0);
+    assert.equal(row.props['data-bond'], expected.bond.bondId);
+    const portraits = [...walk(row)].filter(v => v.type === UnitThumb);
+    assert.deepEqual(portraits.map(v => v.props.id), [...expected.banned, ...expected.available]);
+    assert.equal(new Set(portraits.map(v => v.props.id)).size, portraits.length);
+    for (const portrait of portraits) {
+      assert.equal(portrait.props.dim, expected.banned.includes(portrait.props.id));
+      assert.equal(portrait.props.showTier, false);
+    }
+    assert.equal(textOf(row), expected.bond.name, 'members are portraits, not a text roster');
+  }
+  assert.equal(AffectedBondOperators({ model: matchInfoModel(null) }), null);
 });
 
 test('MatchBondRow: greyed by state (✕ disc), the banned-member badge, the red ring on an enabled bond that lost members, the tip', () => {
@@ -143,7 +166,7 @@ test('BannedOperators: the count and dimmed avatars in tier order; none ⇒ 本�
 test('MatchInfo = 核心盟约, 附加盟约, the legend, 本局禁用干员 (one model); MatchInfoDialog = the same in a Modal with 关闭 and the status line', () => {
   const m = model();
   const parts = MatchInfo({ model: m }).filter((v) => v && typeof v === 'object');
-  assert.deepEqual(parts.map((v) => v.type), [MatchBondRow, MatchBondRow, MatchLegend, BannedOperators]);
+  assert.deepEqual(parts.map((v) => v.type), [MatchBondRow, MatchBondRow, MatchLegend, BannedOperators, AffectedBondOperators]);
   assert.deepEqual(parts.slice(0, 2).map((v) => [v.props.title, v.props.bonds]), [['核心盟约', m.core], ['附加盟约', m.addon]]);
   assert.ok(parts.every((v) => v.props.model === m));
   const onClose = () => {};

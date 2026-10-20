@@ -197,6 +197,9 @@ describe('match hosts in rooms (P1c): verification, the watchdog, crashes', () =
   const ok = async (c, msg, timeout) => { const r = await c.request(msg, timeout); assert.equal(r.t, 'ok', `${msg.t}: ${JSON.stringify(r)}`); return r; };
   /** A solo room with the plugin `id` switched on and checked by the host's page. */
   async function moddedRoom(srv, host, id, mode = 'solo') {
+    // These tests exercise host lifecycle, not cold composition within the socket's two-second reply budget.
+    const built = srv.contents.resolve([id]);
+    assert.equal(built.ok, true, built.detail);
     await ok(host, { t: 'room.create', mode, difficulty: 'NORMAL' });
     await host.waitFor('room.state');
     await ok(host, { t: 'room.setPlugins', plugins: [{ id }] }, START_MS);
@@ -204,6 +207,22 @@ describe('match hosts in rooms (P1c): verification, the watchdog, crashes', () =
     await ok(host, { t: 'room.contentReady', cs: st.content.cs }, START_MS);
     return st;
   }
+
+  for (const on of [true, false]) test(`the room PREP timer ${on} crosses the real gameplay-plugin process boundary`, { timeout: 60_000 }, async () => {
+    const dir = pluginsDir({ rules: [{ data: ['p.json'] }, { 'p.json': bondPatch(0.33) }] });
+    const srv = await startServer({ port: 0, host: '127.0.0.1', log: quiet, pluginsDir: dir, assetIndex: false,
+      matchHost: { matchModule: FIXTURE } });
+    servers.push(srv);
+    const host = await player(srv, 'Timer Host');
+    const st = await moddedRoom(srv, host, 'rules', 'coop');
+    await ok(host, { t: 'room.setPrepTimer', on });
+    assert.equal(srv.lobby.rooms.get(st.code).content.cs, st.content.cs, 'timer selection does not change plugin content');
+    await ok(host, { t: 'room.start' });
+    await ok(host, { t: 'g.emote', id: EMOTES[0] }, 5000);
+    const probe = await host.waitFor('m.toast', m => /^probe;/.test(m.text || ''), 5000);
+    assert.ok(probe.text.includes(`;prepTimer=${on};`), probe.text);
+    assert.equal(srv.lobby.rooms.get(st.code).match.hosted, true);
+  });
 
   test('the watchdog: a worker that stops beating is terminated — the request answered INTERNAL, the room back in its lobby and told', { timeout: 60_000 }, async () => {
     const dir = pluginsDir({ rules: [{ data: ['p.json'] }, { 'p.json': bondPatch(0.33) }] });
@@ -271,6 +290,9 @@ describe('match hosts in rooms (P1c): verification, the watchdog, crashes', () =
     const srv = await startServer({ port: 0, host: '127.0.0.1', log, pluginsDir: dir, assetIndex: false, seedFn: () => 20261013,
       matchHost: { matchOptions: { timerScale: 0.1, combatSpeed: 40, verify: 'all', botRehearsal: 0 } } });
     servers.push(srv);
+    // Keep cold content compilation out of the WebSocket request timeout in this host-verification test too.
+    const built = srv.contents.resolve(['rules']);
+    assert.equal(built.ok, true, built.detail);
     const a = await player(srv, 'Alpha');
     const b = await player(srv, 'Bravo');
     await ok(a, { t: 'room.create', mode: 'coop', difficulty: 'NORMAL' });

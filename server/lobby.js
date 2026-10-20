@@ -274,6 +274,8 @@ export class Room {
      * put every human seat before every AI seat (Match opts.aiPicksLast). Kept across the room's matches.
      */
     this.aiPicksLast = false;
+    // Custom pre-game option: PREP only, independent of the number of human players.
+    this.prepTimer = mode !== 'solo';
     /** @type {string | null} */
     this.hostId = null;
     /** @type {(Seat | null)[]} */
@@ -343,6 +345,7 @@ export class Room {
       mode: this.mode,
       difficulty: this.difficulty,
       aiPicksLast: this.aiPicksLast,
+      prepTimer: this.prepTimer,
       inMatch: !!this.match,
       seats: this.seats.map((s) => (s
         ? { seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, ready: s.ready, connected: s.connected && !s.left,
@@ -635,12 +638,14 @@ export class Lobby {
    */
   handleMessage(session, msg, ctx = null) {
     switch (msg.t) {
+      case 'room.list': return this.listRooms(session, msg);
       case 'room.create': return this.create(session, msg);
       case 'room.join': return this.join(session, msg);
       case 'room.leave': return this.leave(session);
       case 'room.ready': return this.ready(session, msg);
       case 'room.setDifficulty': return this.setDifficulty(session, msg);
       case 'room.setAiPicksLast': return this.setAiPicksLast(session, msg);
+      case 'room.setPrepTimer': return this.setPrepTimer(session, msg);
       case 'room.addBot': return this.addBot(session);
       case 'room.removeBot': return this.removeBot(session, msg);
       case 'room.kick': return this.kick(session, msg);
@@ -765,6 +770,32 @@ export class Lobby {
     return OK;
   }
 
+  /** Same-server directory: never disclose tokens, player IDs, addresses, loadouts or match-private state. */
+  listRooms(session, { page = 0 } = {}) {
+    const rooms = [...this.rooms.values()].filter(room => !room.disposed && !room.test)
+      .sort((a, b) => b.createdAt - a.createdAt || (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
+    const rows = rooms.slice(page * 20, (page + 1) * 20).map(room => {
+      const selected = room.content?.modes?.find(mode => mode.id === room.content?.modeId);
+      return {
+        code: room.code,
+        hostName: room.seatOf(room.hostId)?.name || '—',
+        mode: room.mode,
+        difficulty: room.difficulty,
+        players: room.seats.filter(seat => seat && !seat.left).length,
+        capacity: room.mode === 'solo' ? 1 : MAX_SEATS,
+        inMatch: !!room.match,
+        spectators: room.spectators.length,
+        spectatorCapacity: MAX_SPECTATORS,
+        canJoin: room.mode === 'coop' && !room.match && room.freeSeat() >= 0,
+        canSpectate: room.mode === 'coop' && room.spectators.length < MAX_SPECTATORS,
+        ...(room.modded ? { modded: true } : {}),
+        ...(typeof selected?.name === 'string' ? { modeName: selected.name.slice(0, 80) } : {}),
+      };
+    });
+    sendSession(session, { t: 'room.list', page, pages: Math.max(1, Math.ceil(rooms.length / 20)), total: rooms.length, rooms: rows });
+    return OK;
+  }
+
   join(session, { code, testAck }) {
     const norm = String(code).trim().toUpperCase();
     const room = norm.length === ROOM_CODE_LEN ? this.rooms.get(norm) : undefined;
@@ -884,6 +915,21 @@ export class Lobby {
     if (room.aiPicksLast !== on) {
       room.aiPicksLast = on;
       for (const s of room.seats) if (s && !s.isBot && s.playerId !== room.hostId) s.ready = false;
+      this.broadcastState(room);
+    }
+    return OK;
+  }
+
+  /** Host-only PREP countdown option, frozen once a match starts; guests must confirm a rule change again. */
+  setPrepTimer(session, { on }) {
+    const room = this.roomOf(session);
+    if (!room) return fail(ERR.NOT_IN_ROOM);
+    if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
+    if (room.match) return fail(ERR.ROOM_STARTED);
+    if (room.prepTimer !== on) {
+      this.dropReplay(room, session.playerId);
+      room.prepTimer = on;
+      for (const seat of room.seats) if (seat && !seat.isBot && seat.playerId !== room.hostId) seat.ready = false;
       this.broadcastState(room);
     }
     return OK;
@@ -1387,6 +1433,7 @@ export class Lobby {
         modeId: room.content?.modeId || modeIdFor(room.mode, room.difficulty),
         // 「AI 队友最后选择」 (GitHub #338): fixed for the match
         aiPicksLast: room.mode !== 'solo' && room.aiPicksLast === true,
+        prepTimer: room.prepTimer,
         seats,
         // the spectator seats (header): watched like eliminated players, never players
         spectators: room.spectators.map((s) => s.playerId),

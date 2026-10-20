@@ -6,6 +6,17 @@ Part of [DESIGN.md](../DESIGN.md) (the index; section numbers are global).
 
 ### 6.1 State machine (Match.js)
 
+Custom PREP override: the host's pre-game `room.setPrepTimer {on}` checkbox is independent of human count.
+Co-op rooms default on and solo rooms default off; either mode can be changed before starting. The room keeps
+the value through host migration and match completion. Changing it un-readies other human seats. At start,
+`Match.opts.prepTimer` freezes the boolean: true publishes the round's configured preparation deadline and ends
+PREP on expiry, even for one human; false publishes deadline 0 and waits for all alive players to ready, even
+with multiple humans. Ready may still end a timed phase early. Only PREP is affected: INFO_CHECK, BAND_DRAFT,
+SP_DRAFT, fixed presentation steps, combat, 联防 and boss timers retain their original rules below. Legacy
+Match callers that omit the option retain the original `soloUntimed` behavior; no simulation formulas change.
+An explicitly timed solo PREP uses the round's retained `prepTimeData` (300 s in the current data); when no
+positive duration is configured, the existing preparation fallback of 90 s ensures that checked really means timed.
+
 ```
 LOBBY(room) → INFO_CHECK (co-op 25 s; solo and any single-human match untimed (§18.2); all ready ⇒ skip; the operator loadout (§16) locks when it ends) → BAND_DRAFT (co-op: random order — the room option 「AI 队友最后选择」 (host, off by default; `room.setAiPicksLast`) puts every human seat before every AI seat, each group keeping the drawn order, and draws no extra random number; a skipping human goes behind the other humans still to pick and ahead of the AI seats, or to the very end when no other human remains [ASSUMED] —, ONE countdown — `BAND_TURN_SECONDS` 50 s per turn = m.public.deadline, AI seats pick at once, 1 skip each, a strategy a teammate already took is refused (队友已选), timeout ⇒ the strategy the player highlights (`g.bandFocus`) while free, else band_bldsk, else the first free one; solo: free pick, no timer, no skip; a single human: untimed) → BATTLE_CHECK (3 s)
 → loop r = 1..lastRound:

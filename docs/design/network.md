@@ -336,3 +336,11 @@ are entirely native and require consent [ASSUMED]; trusted classes cannot load i
 same-origin native script responses before import; all gameplay battle simulations run in Workers.
 
 Test-room admission requires `testAck:true` for both join and spectate; otherwise `TEST_CONFIRM` precedes any membership/state delivery. `g.test bond` accepts `{id,layers,count?}` (count is 0–99 extra members). All host attempts consume their per-command rate bucket, including malformed args. `[test-input ROOM]` init/call/timer JSON lines and `[test-audit ROOM]` results use the server logger. Test results have null titles and zero trophies/rewards and never enter browser records.
+
+### Custom fork 0.3.1 protocol additions
+
+room.list {page?} is a handshaken, heavy-budget request returning at most twenty ordinary-room metadata rows.
+It discloses no player IDs, tokens, addresses, loadouts or plugin settings; test rooms stay on the official path.
+room.setPrepTimer {on} is host-only before a match. g.combatSpeed {on} is a human vote; shared public vote state
+and b.speed update browser pacing without replacing battle state. The 0.3.1 test/testAck and skin messages remain.
+Gameplay match-host wire options retain both prepTimer and the new upstream kitted/test/rules fields.

@@ -258,6 +258,7 @@ function MatchScreen() {
   const [camKind, setCamKind] = useState('prep');        // kind of the last camera request (data-camera)
   const [replace, setReplace] = useState(null);          // equip-replace dialog: { request, resolve }
   const [pauseBusy, setPauseBusy] = useState(false);
+  const [speedBusy, setSpeedBusy] = useState(false);
   const [armedCard, setArmedCard] = useState(null);     // the shop bar's armed card { kind, id } (merge tile cue)
   const cc = isClientCombat(pub);
   const battleState = useStore((s) => s.match.battle, shallowEqual); // local battle runner (client-side combat)
@@ -612,6 +613,13 @@ function MatchScreen() {
       setHud(hudRef.current);
     }
   }, [view, showPrep, priv, editable, field, combat, mode, watchingOther, watching, holdSeq]);
+
+  // A rate vote changes interpolation speed without re-entering the battle or resetting any actor/animation.
+  useEffect(() => {
+    if (view && field?.local && Number.isFinite(battleState?.speed)) {
+      view.raw?.setLocalFeed?.({ on: true, speed: battleState.speed });
+    }
+  }, [view, field, battleState?.speed]);
 
   // the round start (PR #416 by @Cromemadnd; the maintainer's confirmation from official play, 2026-10-13): the own board's
   // pieces replay their Start clip and landing sound one after another in deployment order — once per round, in 回合开始, on
@@ -1265,6 +1273,11 @@ function MatchScreen() {
   const togglePauseRef = useRef(togglePause);
   togglePauseRef.current = togglePause;
 
+  const toggleCombatSpeed = useCallback(async (on) => {
+    setSpeedBusy(true);
+    try { await actions.combatSpeed(on); } finally { setSpeedBusy(false); }
+  }, []);
+
   // a press on the field deselects (a tap on a piece selects it again at release — see pieceClick)
   useEffect(() => {
     const host = hostRef.current;
@@ -1679,6 +1692,7 @@ function MatchScreen() {
         pen=${pen} penAvail=${penAvail} onPen=${togglePen} config=${gd.config} frozenAt=${frozenAt}
         pause=${canPause || paused ? { show: canPause, paused, busy: pauseBusy, onToggle: () => togglePause(!paused) } : null}
         live=${liveLpNow} spectator=${spectator}
+        speedBusy=${speedBusy} onSpeed=${toggleCombatSpeed}
         spectators=${specFacts.list} myId=${myId} isHost=${specFacts.isHost} onRemoveSpectator=${removeSpectator} room=${modRoom} />
 
       <div class="gm__bonds">

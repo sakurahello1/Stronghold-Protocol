@@ -671,3 +671,11 @@ keys override and missing/invalid entries retain built-in text. Scope remains br
 room content and simulation. Pure geometry SDK helpers return frozen values and accept at most 1024 range cells.
 Forge UI mounts without an equivalent slot require an explicit manual-adaptation report, separate from script copying.
 Art/audio templates ship original CC0 sample media; the studio fills the target's first editable slot [ASSUMED].
+
+### Custom fork 0.3.1 UI additions
+
+Affected bond members have supplemental coloured/grey portrait rows; the normal briefing blocks remain.
+A bounded same-server room directory lists ordinary rooms only; test rooms retain the official confirmation path.
+Field fallback recovery has two automatic retries, separate from the two existing useful-event retries [ASSUMED].
+Recovered views receive v0.3.1 seat identity and current skins before publication, and live skin subscriptions remain.
+The official result flow is unchanged; see [CUSTOM_PATCH](../CUSTOM_PATCH.md) for intentionally dropped result additions.

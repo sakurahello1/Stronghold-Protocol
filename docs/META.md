@@ -1075,3 +1075,11 @@ blocking `battleCheck` window. Failed grants leave the seat unpicked; auto/bot f
 and skips when none grants [ASSUMED]. Native `g.offer`/`g.offerRefresh` use plugin id, local window id, sequence and slot; `m.public.offers` is a
 reconnectable, spectator-readable snapshot. Bots resolve immediately. Sources, bounds and [ASSUMED] defaults are
 [PLUGINS §10b](PLUGINS.md#10b-offers--interaction-windows); test journals carry declarations and intents.
+
+## Custom fork 0.3.1: retained room options
+
+The host's room.setPrepTimer {on} overrides PREP only; legacy Match callers omitting prepTimer keep soloUntimed.
+The boolean survives gameplay-plugin match-host serialization. A COMBAT/UNITE-only combat-speed vote requires
+max(1, N-1) alive non-left humans, keeps temporary disconnects in the electorate and preserves elapsed battle time
+and result grace on rate changes. Boss clocks and deterministic simulation steps are unchanged.
+See [the custom migration inventory](CUSTOM_PATCH.md); upstream 0.3.1 result contracts are retained without old LP additions.

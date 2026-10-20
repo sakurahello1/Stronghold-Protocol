@@ -308,6 +308,10 @@
 .ailast__opt:last-child { border-right: 1px solid var(--line-2); }
 .ailast__opt .icon { opacity: .25; }
 .ailast__opt .icon.is-on { opacity: 1; }
+.prep-timer { display: flex; align-items: center; gap: .08rem; min-height: .3rem; font-size: max(calc(.14 * var(--t)), 12px); cursor: pointer; }
+.prep-timer input { width: max(.17rem, 14px); height: max(.17rem, 14px); margin: 0; accent-color: var(--mint-400); }
+.prep-timer input:disabled { cursor: default; }
+.room-bar--prep-timer { min-height: max(1.5rem, 90px); }
 
 .ready-count[hidden] { display: none; }
 .ready-count { display: flex; align-items: baseline; gap: .06rem; font-size: calc(.16 * var(--t)); }

@@ -389,12 +389,15 @@ export class GameData {
     return { chess: Math.min(chess, 8), item: Math.min(item, 4) };
   }
 
-  /** Real-second prep timer for round r (null = untimed). */
-  prepTime(r) {
+  /** Real-second prep timer (null = untimed). Explicit room override may restore the raw solo duration. */
+  prepTime(r, { force = false } = {}) {
     const rc = this.roundCfg(r);
-    if (!rc) return this.isSolo ? null : 90;
+    if (!rc) return force || !this.isSolo ? 90 : null;
     const v = rc.prepTime;
-    return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null;
+    if (typeof v === 'number' && Number.isFinite(v) && v > 0) return v;
+    if (!force) return null;
+    const raw = rc.prepTimeData;
+    return typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : 90;
   }
 
   /** The round level's `maxPlayTime` (config rounds[r].combatTimeLimit) as data gives it — REAL seconds. */

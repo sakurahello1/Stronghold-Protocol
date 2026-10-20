@@ -27,7 +27,7 @@ export class Match extends StubMatch {
       const seat = (this.opts.seats || []).find((x) => x.playerId === playerId) || {};
       this.sendFn(playerId, { t: 'm.toast', kind: 'info', text: `probe;cs=${this.opts.cs || ''};requireCs=${this.opts.requireCs === true};modeId=${this.opts.modeId};`
         + `bond=${d.bonds?.deputShip?.bb?.base_def};plugin-modes=${modes.filter((m) => m.startsWith('mode_x_')).join(',')};ops=${JSON.stringify(seat.ops || null)};`
-        + `times-cap=${bbCap('times')}` });
+        + `prepTimer=${this.opts.prepTimer};times-cap=${bbCap('times')}` });
       return { ok: true };
     }
     if (msg && msg.t === 'g.emote' && msg.id === EMOTES[1]) {
