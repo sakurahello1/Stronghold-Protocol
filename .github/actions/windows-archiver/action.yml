@@ -22,8 +22,13 @@ runs:
     - name: Verify Unicode ZIP packaging with the original assertions
       shell: pwsh
       run: |
-        $expected = Join-Path $env:RUNNER_TOOL_CACHE 'sp-windows-archiver/tar.exe'
-        if ((Get-Command tar -CommandType Application).Source -ne $expected) { throw 'The system tar still shadows the fixed tool' }
+        $archiver = Join-Path $env:RUNNER_TOOL_CACHE 'sp-windows-archiver'
+        # Set this shell's PATH too; GITHUB_PATH also selects the tool for later workflow steps.
+        $env:PATH = "$archiver;$env:PATH"
+        $expected = [IO.Path]::GetFullPath((Join-Path $archiver 'tar.exe'))
+        $selected = [IO.Path]::GetFullPath((Get-Command tar -CommandType Application).Source)
+        Write-Output "Expected archiver: $expected; selected: $selected"
+        if ($selected -ne $expected) { throw 'The system tar still shadows the fixed tool' }
         Write-Output 'System archiver (not used by the tests):'
         & "$env:SystemRoot/System32/tar.exe" --version
         Write-Output 'Selected archiver:'
