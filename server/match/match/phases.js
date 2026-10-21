@@ -1,3 +1,5 @@
+import { isLavinia, BAND as LAVINIA_BAND } from '../lavinia/index.js';
+import { isArturia, BAND } from '../arturia/index.js';
 // server/match/match/phases.js — Match methods: the round flow up to the prep — INFO_CHECK, the strategy draft
 // (BAND_DRAFT: one countdown of BAND_TURN_SECONDS per turn, 队友已选, the highlighted strategy on a timeout, skips),
 // BATTLE_CHECK and ROUND_START (the round's enemies — a normal wave or the boss pairing — planned before the players'
@@ -47,6 +49,9 @@ export class MatchPhases {
     let order = this.order.map((p) => p.playerId);
     if (!this.isSolo) this.rngDraft.shuffle(order);
     order = this.humansFirst(order);
+    order = [...order.filter(pid => isLavinia(this, this.players.get(pid))), ...order.filter(pid => !isLavinia(this, this.players.get(pid)))];
+    // The named teammate commits first, even with aiPicksLast enabled. Other players keep their relative order.
+    order = [...order.filter(pid => isArturia(this, this.players.get(pid))), ...order.filter(pid => !isArturia(this, this.players.get(pid)))];
     const skips = this.isSolo ? 0 : this.gd.bandDraft.skipsPerPlayer;
     const untimed = this.soloUntimed;
     this.draft = {
@@ -139,6 +144,8 @@ export class MatchPhases {
    * assignments — a turn that runs out and a departing seat — obey the same rule: see timeoutBand / defaultBand.
    */
   bandTaken(bandId, playerId) {
+    if (bandId === LAVINIA_BAND && this.order.some(ps => ps.playerId !== playerId && isLavinia(this, ps))) return true;
+    if (bandId === BAND && this.order.some(ps => ps.playerId !== playerId && isArturia(this, ps))) return true;
     const picks = this.draft?.picks || {};
     for (const [pid, id] of Object.entries(picks)) if (pid !== playerId && id === bandId) return true;
     return false;
@@ -153,6 +160,8 @@ export class MatchPhases {
    * @param {string} playerId
    */
   defaultBand(playerId) {
+    if (isLavinia(this, this.players.get(playerId))) return LAVINIA_BAND;
+    if (isArturia(this, this.players.get(playerId))) return BAND;
     const def = this.gd.bandDraft.timeoutBandId;
     if (!this.bandTaken(def, playerId)) return def;
     return this.gd.bandIds().find((b) => !this.bandTaken(b, playerId)) || def;

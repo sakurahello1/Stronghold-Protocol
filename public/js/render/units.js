@@ -375,7 +375,11 @@ const PRISONER_COLOURED = prisoner('_orange', '_red');
 const dollRoles = (idle, die, attack = null) => Object.freeze({
   idle, deploy: idle, die, attack: attack ? Object.freeze({ begin: null, loop: attack, end: null }) : null, attackDown: null, skill: null,
 });
+// Reviewed local persona clips, used only by the optional collab operator's spine.
+const MAKOTO_PERSONAS = Object.freeze({"makoto_s1":{"change":"Doll_Skill_1_SwitchIn","leave":"Doll_Skill_1_SwitchOut","roles":{"idle":"Doll_Skill_1_Idle","deploy":"Doll_Skill_1_Idle","die":"Doll_Skill_1_Die","move":{"begin":null,"loop":"Doll_Skill_1_Idle","end":null},"attack":{"begin":null,"loop":"Doll_Skill_1_Attack","end":null,"via":"attackAny"},"skill":{"begin":null,"loop":"Doll_Skill_1_Attack","end":null,"via":"attack"}}},"makoto_s2":{"change":"Doll_Skill_2_SwitchIn","leave":"Doll_Skill_2_SwitchOut","roles":{"idle":"Doll_Skill_2_Loop","deploy":"Doll_Skill_2_Loop","die":"Doll_Skill_2_Die","move":{"begin":null,"loop":"Doll_Skill_2_Loop","end":null},"attack":null,"skill":null}},"makoto_s3a":{"change":"Doll_Skill_3_P1_SwitchIn","leave":"Doll_Skill_3_P1_SwitchOut","end":"Doll_Skill_3_P1toP2_ChangeEnd","next":"makoto_s3b","roles":{"idle":"Doll_Skill_3_P1_Idle","deploy":"Doll_Skill_3_P1_Idle","die":"Doll_Skill_3_P2_Die","move":{"begin":null,"loop":"Doll_Skill_3_P1_Idle","end":null},"attack":{"begin":null,"loop":"Doll_Skill_3_P1_Attack_A","end":null,"via":"attackAny"},"skill":{"begin":null,"loop":"Doll_Skill_3_P1_Attack_A","end":null,"via":"attack"}}},"makoto_s3b":{"change":"Doll_Skill_3_P1toP2_ChangeEnd","leave":"Doll_Skill_3_P2_SwitchOut","roles":{"idle":"Doll_Skill_3_P2_Loop","deploy":"Doll_Skill_3_P2_Loop","die":"Doll_Skill_3_P2_Die","move":{"begin":null,"loop":"Doll_Skill_3_P2_Loop","end":null},"attack":null,"skill":null}}});
 export const FORMS = Object.freeze({
+  char_4217_makoto: MAKOTO_PERSONAS,
+  char_x_collab_recruits_makoto: MAKOTO_PERSONAS,
   [MANIFOLD]: Object.freeze({
     Default: Object.freeze({ roles: { ...clipSet('Idle_1', null, 'Stun', 'Attack'), deploy: 'Start', stun: loop('Stun') } }),
     Melee: Object.freeze({ change: 'Change_A', combat: 'A_Combat', roles: { ...clipSet('A_Idle', null, 'Die', 'A_Attack'), deploy: 'A_Start', stun: loop('A_Stun'), attackDown: null } }),

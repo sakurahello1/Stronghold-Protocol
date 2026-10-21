@@ -1083,3 +1083,6 @@ The boolean survives gameplay-plugin match-host serialization. A COMBAT/UNITE-on
 max(1, N-1) alive non-left humans, keeps temporary disconnects in the electorate and preserves elapsed battle time
 and result grace on rate changes. Boss clocks and deterministic simulation steps are unchanged.
 See [the custom migration inventory](CUSTOM_PATCH.md); upstream 0.3.1 result contracts are retained without old LP additions.
+
+
+Local fork integration (2026-10-21): optional five/six-tier collab DIY records and explicit elite AI seats are specified in [COLLAB_RECRUITS.md](COLLAB_RECRUITS.md); the ordinary room/AI/pool behavior is preserved.
