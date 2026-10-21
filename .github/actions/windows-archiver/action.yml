@@ -26,7 +26,7 @@ runs:
         # Set this shell's PATH too; GITHUB_PATH also selects the tool for later workflow steps.
         $env:PATH = "$archiver;$env:PATH"
         $expected = [IO.Path]::GetFullPath((Join-Path $archiver 'tar.exe'))
-        $selected = [IO.Path]::GetFullPath((Get-Command tar -CommandType Application).Source)
+        $selected = [IO.Path]::GetFullPath((Get-Command tar -CommandType Application | Select-Object -First 1).Source)
         Write-Output "Expected archiver: $expected; selected: $selected"
         if ($selected -ne $expected) { throw 'The system tar still shadows the fixed tool' }
         Write-Output 'System archiver (not used by the tests):'
