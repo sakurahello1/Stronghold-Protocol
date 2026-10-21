@@ -22,7 +22,9 @@ function Get-VerifiedSource([string] $Url, [string] $Name, [string] $Hash) {
 }
 
 function Invoke-CMake([string[]] $Arguments) {
-    & cmake @Arguments
+    # libarchive's CMake probes embed paths in CMake source; backslashes become escapes such as \a.
+    $normalizedArguments = @($Arguments | ForEach-Object { $_.Replace('\', '/') })
+    & cmake @normalizedArguments
     if ($LASTEXITCODE -ne 0) { throw "CMake failed ($LASTEXITCODE): $Arguments" }
 }
 
