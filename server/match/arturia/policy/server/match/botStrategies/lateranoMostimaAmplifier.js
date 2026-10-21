@@ -106,6 +106,7 @@ export function* mostimaAmplifierSteps(m, ps, recipe, helpers) {
   const job = yield* createForecastSteps(m, ps, original, plans,
     p => helpers.bossInputSteps(m, ps, p.lineup, p, { keepWithdrawn: true }), policy);
   if (!job) return;
+  // host-compat loop-cap: finite forecast candidates and per-trial tick cap; run advances its saved cursor
   while (!job.run(4)) yield;
   const best = job.best, before = original.map(p => ({ uid: p.uid, id: p.id, key: plans[0].get(p.uid), dir: p.dir }));
   if (job.bestIndex) {

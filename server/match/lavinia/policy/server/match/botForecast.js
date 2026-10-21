@@ -91,9 +91,11 @@ export function* createForecastSteps(m, ps, chosen, plans, inputSteps, recipe) {
   const job={ chosen,plans:candidates,best:candidates[0],bestIndex:0,done:false,outcomes:[],
     run(budgetMs=Infinity) {
       const start=performance.now(); let steps=0;
+      // host-compat loop-cap: finite trial list; each trial advances after its tick cap
       while (i<trials.length) {
         const trial=trials[i], b=trial.battle;
         try {
+          // host-compat loop-cap: forecast tick cap and battle.finished
           while (!trial.failed && !b.finished && ticks<cap) {
             b.step(); ticks++; steps++;
             if (boss && (trial.pool.hp<=0 || ps.lp-trial.lost-m.gd.bossOvertimeDue(b.time,after)<=0)) {

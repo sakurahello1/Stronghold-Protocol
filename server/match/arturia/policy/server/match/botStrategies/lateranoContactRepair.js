@@ -25,7 +25,9 @@ function assignment(costs) {
       }
       for(let j=0;j<=m;j++)if(used[j]){u[p[j]]+=delta;v[j]-=delta;}else min[j]-=delta;
       j0=j1;
+    // host-compat loop-cap: finite assignment augmenting path, at most the board column count
     }while(p[j0]!==0);
+    // host-compat loop-cap: finite assignment augmenting path, at most the board column count
     do{const j1=way[j0];p[j0]=p[j1];j0=j1;}while(j0);
   }
   const out=Array(n).fill(-1);

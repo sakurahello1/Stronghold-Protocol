@@ -12,10 +12,10 @@ const ids = Object.freeze({ insider: 'chess_char_1_01_a', executor: 'chess_char_
   ines: 'chess_char_4_04_a', coldshot: 'chess_char_5_21_a', kroosAlter: 'chess_char_4_06_a', titi: 'chess_char_5_02_a',
   leonhardt: 'chess_char_4_14_a', minimalist: 'chess_char_3_13_a', tippi: 'chess_char_2_13_a',
   gnosis: 'chess_char_4_13_a', astgenne: 'chess_char_6_16_a', fold: 'chess_char_2_17_a' });
-const route = (support, name) => Object.freeze({ id: `${CORE}:${support}`, name, strategyName: '拉特兰', core: CORE,
+const route = (support, name) => Object.freeze({ id: `${CORE}:${support}`, name, strategyName: '拉特兰', core: CORE, // i18n-ignore: host-compat internal strategy/data labels; never UI text
   coreMembers: 6, support, supports: Object.freeze([support]), supportMembers: support === 'preciShip' ? 3 : 2,
   economy: Object.freeze({ bond: 'visiShip', members: 2, layerMilestones: Object.freeze([80, 150]) }) });
-const routes = Object.freeze([route('preciShip', '精准'), route('skillfulShip', '灵巧')]);
+const routes = Object.freeze([route('preciShip', '精准'), route('skillfulShip', '灵巧')]); // i18n-ignore: host-compat internal strategy/data labels; never UI text
 const gdOf = (m, ps) => ps.gd || m.gd;
 const base = (gd, p) => gd.baseIdOf(p.id ?? p.chessId);
 const copies = (gd, ps, id) => ps.allChess().filter((p) => base(gd, p) === id);
@@ -410,7 +410,7 @@ function rehearsalValue(m, ps, pp) {
     + ((ps.layers.visiShip || 0) < 150 ? (gain.visiShip || 0) * 0.4 : 0));
 }
 
-export const laterano = Object.freeze({ name: '拉特兰', core: CORE, spendAllFunds: true, ids, routes, selectRoute, routeScores, giftState,
+export const laterano = Object.freeze({ name: '拉特兰', core: CORE, spendAllFunds: true, ids, routes, selectRoute, routeScores, giftState, // i18n-ignore: host-compat internal strategy/data labels; never UI text
   buyBonus, unitBonus, lineupBonus, layoutValue, layoutCandidates, ammoWeight, castForecast, executorRisk, firingShare, visionPlan, levelTarget, upgradeReserve,
   beforeUpgrade, priorityLevel, spendReserve, criticalBuy, refreshValue, keep, preserve,
   itemBonus, holdItem, itemTarget, itemReplacement, combatLineups, trainingLineups, rehearsalValue,

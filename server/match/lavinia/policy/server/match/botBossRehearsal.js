@@ -37,8 +37,10 @@ export function* createBossRehearsalSteps(m, ps, chosen, plans, inputSteps) {
   let i = 0, ticks = 0, bestScore = -Infinity;
   const job = { chosen, plans: candidates, best: candidates[0], done: false, outcomes: [], run(budgetMs = Infinity) {
     const start = performance.now(); let steps = 0;
+    // host-compat loop-cap: finite trial list; each trial advances after its tick cap
     while (i < trials.length) {
       const t = trials[i];
+      // host-compat loop-cap: forecast tick cap and battle.finished
       while (!t.battle.finished && ticks < cap) {
         t.battle.step(); ticks++; steps++;
         const remaining = ps.lp - t.lost - m.gd.bossOvertimeDue(t.battle.time, after);

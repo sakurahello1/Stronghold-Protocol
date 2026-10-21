@@ -18,7 +18,7 @@ Official main/sub-power membership gives 丰川祥子 the existing fallback `emp
 
 One source BB key, 丰川 S2 `attack@attack_speed`, is normalized to the existing `attack_speed` key and read under that
 name by its builder. Its exact official values (80/110) are retained; the plugin's bounds checks are not relaxed.
-`collab-recruits-art` is a separately packed cosmetic companion. Its models are parsed into the lock file, not supplied
+`recruit-visuals` is a separately packed cosmetic companion. Its models are parsed into the lock file, not supplied
 with handwritten clip metadata. The reviewed Makoto persona roles are wired to his specific spine ids in the renderer.
 
 Kit source: https://github.com/remember-4/Stronghold-Protocol-test at
@@ -36,7 +36,9 @@ the original pool. The room is correctly marked as modified. Neither operator is
 ## AI source extensions
 
 Source: https://github.com/HankDUMPLINGZhong/Stronghold-Protocol-AI at
-`7d4e051b990a0b63578e33bddac44fe2c068b5e3`. The released policy sources and hashes are unchanged. Each copied addon
+`7d4e051b990a0b63578e33bddac44fe2c068b5e3`. The released addon policy bundles and hashes are unchanged. Runtime copies add only loop-cap and internal-label
+comments required by the host; a byte-comparison test strips precisely those comments to verify the original policy.
+The waiting-room portraits use the existing pure URL helper to retain the vanilla lazy asset-loading boundary. Each copied addon
 includes its GPL license and installation tools. Install Arturia first, then Lavinia; uninstall in reverse order.
 Private `.arturia-addon` / `.lavinia-addon` recovery journals stay local and are never committed.
 

@@ -80,6 +80,7 @@ export function lateranoKeyLiquidityPlan(m, ps, recipe, valuation = null) {
     if (pool.has(target.slot.id) && pool.left(target.slot.id) <= 0) continue;
     let remaining = owned.slice(), funds = ps.funds;
     const sales = [];
+    // host-compat loop-cap: positive sale revenue reaches the finite target price, or empty candidates break
     while (funds < ps.priceOf(target.slot)) {
       const candidates = [...ps.hand, ...ps.temp].filter(p => p?.kind === 'chess' && gd.sellPrice(p.id) > 0)
         .map(p => ({ p, rank: saleRank(m, ps, recipe, p, remaining, target.slot, valuation),

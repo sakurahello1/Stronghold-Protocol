@@ -190,9 +190,11 @@ export function* controlBossSteps(m, ps, helpers, enabled) {
   function* compare(candidates) {
     const input = p => bossInputSteps(m, ps, p.lineup, p, { keepWithdrawn: true });
     const first = yield* createBossRehearsalSteps(m, ps, original, candidates, input);
+    // host-compat loop-cap: finite forecast candidates and per-trial tick cap; run advances its saved cursor
     if (!first) return null; while (!first.run(4)) yield;
     const owner = Object.assign(Object.create(m), { seed: deriveSeed(m.seed, 'control-boss-forecast:1') });
     const second = yield* createBossRehearsalSteps(owner, ps, original, candidates, input);
+    // host-compat loop-cap: finite forecast candidates and per-trial tick cap; run advances its saved cursor
     if (!second) return null; while (!second.run(4)) yield;
     const index = pairedBossChoice(first.outcomes, second.outcomes);
     return { best: first.plans[index], index, outcomes: first.outcomes, secondary: second.outcomes };

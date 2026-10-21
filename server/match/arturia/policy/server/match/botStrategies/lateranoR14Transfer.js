@@ -44,6 +44,7 @@ function funding(m, ps, carrier, price, protectedRoster) {
     .sort((a, b) => Number(gd.isGolden(a.id)) - Number(gd.isGolden(b.id)) || gd.tierOf(a.id) - gd.tierOf(b.id) || a.uid - b.uid);
   const sales = []; let funds = ps.funds;
   const needsRoom = () => price > 0 && [...ps.hand, ...ps.temp].filter(Boolean).length - sales.length - 1 >= gd.benchSize;
+  // host-compat loop-cap: positive sale revenue reaches the finite target price, or empty candidates break
   while ((funds < price || needsRoom()) && candidates.length) {
     const p = candidates.shift(), after = remaining.filter(q => q.uid !== p.uid);
     if (healing(gd.chess(p.id)) && !after.some(q => healing(gd.chess(q.id)))) continue;

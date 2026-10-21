@@ -37,6 +37,7 @@ import { draftSafetyKey, evaluateDraftSafety } from './botStrategies/siracusaDra
  */
 export function runSteps(gen) {
   let r;
+  // host-compat loop-cap: finite planning generator
   do r = gen.next(); while (!r.done);
   return r.value;
 }
@@ -1473,6 +1474,7 @@ export function* createRehearsalSteps(m, ps, chosen, plans) {
       const timed = Number.isFinite(budgetMs);
       const t0 = timed ? performance.now() : 0;
       let n = 0;
+      // host-compat loop-cap: finite trial list; each trial advances after its tick cap
       while (i < battles.length) {
         // a candidate that ended mid-slice (finished, cap, or beaten at a 64-tick check that skipped the budget test):
         // check the budget before stepping the next one, so a slice never exceeds 4 ticks past its budget
@@ -1480,6 +1482,7 @@ export function* createRehearsalSteps(m, ps, chosen, plans) {
         const battle = battles[i];
         try {
           let beaten = false;
+          // host-compat loop-cap: forecast tick cap and battle.finished
           while (t < cap && !battle.finished) {
             battle.step();
             t++;
@@ -2207,6 +2210,7 @@ export function* arrangeSteps(m, ps, { final = false, defer = false } = {}) {
     }
     const job = yield* createForecastSteps(m, ps, chosen, plans,
       plan => bossInputSteps(m, ps, plan.lineup || chosen, plan, { keepWithdrawn: true }), ctx.strategy);
+    // host-compat loop-cap: finite forecast candidates and per-trial tick cap; run advances its saved cursor
     if (job && !defer) while (!job.run()) { /* synchronous tools */ }
     const target = job?.done ? job.best : plans[0];
     yield* applyPlanSteps(m, ps, job?.done ? job.chosen : chosen, target);
@@ -2247,6 +2251,7 @@ export function* arrangeSteps(m, ps, { final = false, defer = false } = {}) {
       const job = yield* createBossRehearsalSteps(m, ps, chosen, plans, inputSteps);
       if (job) {
         if (defer) { yield* applyPlanSteps(m, ps, chosen, plans[0]); return job; }
+        // host-compat loop-cap: finite forecast candidates and per-trial tick cap; run advances its saved cursor
         while (!job.run()) { /* synchronous tools */ }
         yield* applyPlanSteps(m, ps, chosen, job.best); return null;
       }

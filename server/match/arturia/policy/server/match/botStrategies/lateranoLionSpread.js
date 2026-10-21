@@ -78,6 +78,7 @@ export function* lateranoLionSpreadSteps(m,ps,helpers){
  const original=new LayoutPlan();for(const [key,p]of ps.board)if(p.kind==='chess'){original.set(p.uid,key);original.dirs.set(p.uid,p.dir);}
  const plans=[original,...selected.map(p=>{const plan=new LayoutPlan();p.layout.forEach((loc,i)=>{plan.set(chosen[i].uid,loc.key);plan.dirs.set(chosen[i].uid,loc.dir);});return plan;})];
  const job=yield* createBossRehearsalSteps(m,ps,chosen,plans,p=>bossInputSteps(m,ps,chosen,p));
+ // host-compat loop-cap: finite forecast candidates and per-trial tick cap; run advances its saved cursor
  if(!job)return;while(!job.run(4))yield;
  const before=[...ps.board].filter(([,p])=>p.kind==='chess').map(([key,p])=>({uid:p.uid,id:p.id,key,dir:p.dir}));
  yield* applyPlanSteps(m,ps,chosen,job.best);

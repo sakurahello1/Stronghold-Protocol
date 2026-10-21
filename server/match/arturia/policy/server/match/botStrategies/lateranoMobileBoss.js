@@ -151,11 +151,13 @@ export function* mobileBossSteps(m, ps, helpers, enabled) {
   function* comparePlans(candidates) {
     const first = yield* createBossRehearsalSteps(m, ps, chosen, candidates, p => bossInputSteps(m, ps, chosen, p));
     if (!first) return null;
+    // host-compat loop-cap: finite forecast candidates and per-trial tick cap; run advances its saved cursor
     while (!first.run(4)) yield;
     // A read-only owner for the second public forecast; do not change the match seed or its random streams.
     const secondOwner = Object.assign(Object.create(m), { seed: deriveSeed(m.seed, 'mobile-boss-forecast:1') });
     const second = yield* createBossRehearsalSteps(secondOwner, ps, chosen, candidates, p => bossInputSteps(m, ps, chosen, p));
     if (!second) return first;
+    // host-compat loop-cap: finite forecast candidates and per-trial tick cap; run advances its saved cursor
     while (!second.run(4)) yield;
     const selectedIndex = pairedBossChoice(first.outcomes, second.outcomes);
     first.best = first.plans[selectedIndex]; first.bestIndex = selectedIndex;
@@ -164,6 +166,7 @@ export function* mobileBossSteps(m, ps, helpers, enabled) {
   }
   const job = yield* comparePlans(plans);
   if (!job) return;
+  // host-compat loop-cap: finite forecast candidates and per-trial tick cap; run advances its saved cursor
   while (!job.run(4)) yield;
   let best = job.best;
   const refinements = [], seen = new Set(plans.map(p => chosen.map(u => `${p.get(u.uid)}:${p.dirs.get(u.uid)}`).join('|')));
@@ -208,6 +211,7 @@ export function* mobileBossSteps(m, ps, helpers, enabled) {
     const localPlans = [best, ...proposals.map(p => planOf(p.layout))];
     const local = yield* comparePlans(localPlans);
     if (!local) continue;
+    // host-compat loop-cap: finite forecast candidates and per-trial tick cap; run advances its saved cursor
     while (!local.run(4)) yield;
     best = local.best;
     refinements.push({ stage, outcomes: local.outcomes, secondaryOutcomes: local.secondaryOutcomes, selectedIndex: local.bestIndex ?? 0,

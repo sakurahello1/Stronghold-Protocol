@@ -34,6 +34,7 @@ export function blockArrivalTimes(model, key) {
 export function capacityShare(arrivals, hold, capacity) {
   let peak = 0, left = 0;
   for (let right = 0; right < arrivals.length; right++) {
+    // host-compat loop-cap: left increases to right, bounded by arrivals.length
     while (arrivals[right] - arrivals[left] >= hold && left < right) left++;
     peak = Math.max(peak, right - left + 1);
   }

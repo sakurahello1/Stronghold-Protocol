@@ -1,4 +1,4 @@
-import { avatarUrl } from '../assets.js';
+import { chessAvatarUrl } from '../ui/assetUrls.js';
 import { data, useData } from '../data.js';
 // Room screen (同盟等待室): 4 seat cards (avatar frame, name, ready state, AI badge, host crown),
 // host controls (difficulty picker, add/remove AI and the 「AI 队友最后选择」 switch in co-op, start), invite code with
@@ -123,11 +123,11 @@ export { copyText };
 
 function ArturiaAvatar(props) {
   useData("assets");
-  return html`<${AvatarFrame} ...${props} src=${avatarUrl(data.get("assets"), "char_245_cello", { e2: true })} />`;
+  return html`<${AvatarFrame} ...${props} src=${chessAvatarUrl(data.get("assets"), { charId: "char_245_cello", isGolden: true })} />`;
 }
 function LaviniaAvatar(props) {
   useData("assets");
-  return html`<${AvatarFrame} ...${props} src=${avatarUrl(data.get("assets"), "char_4065_judge", { e2: true })} />`;
+  return html`<${AvatarFrame} ...${props} src=${chessAvatarUrl(data.get("assets"), { charId: "char_4065_judge", isGolden: true })} />`;
 }
 const ELITE_RECRUITS = Object.freeze([{ id: "arturia", label: () => t("阿尔图罗") }, { id: "lavinia", label: () => t("拉维妮娅") }]);
 function EliteRecruit({ room, busy, onAdd }) {

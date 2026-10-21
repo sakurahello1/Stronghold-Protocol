@@ -16,10 +16,10 @@ const ids = Object.freeze({ provence: 'chess_char_1_07_a', texas: 'chess_char_1_
   aroma: 'chess_char_4_10_a', texasAlter: 'chess_char_4_16_a', surtr: 'chess_char_5_07_a', suzuran: 'chess_char_5_10_a',
   angelina: 'chess_char_5_20_a', lapplandAlter: 'chess_char_6_18_a',
   nymph: 'chess_char_5_22_a', degenbrecher: 'chess_char_6_19_a', passenger: 'chess_char_6_05_a', muelsyse: 'chess_char_6_11_a' });
-const route = (id, name, supports) => Object.freeze({ id: `${CORE}:${id}`, name, strategyName: '叙拉古', core: CORE,
+const route = (id, name, supports) => Object.freeze({ id: `${CORE}:${id}`, name, strategyName: '叙拉古', core: CORE, // i18n-ignore: host-compat internal strategy/data labels; never UI text
   coreMembers: 6, support: supports[0], supports: Object.freeze(supports), supportMembers: 2 });
-const swift = route('swift', '迅捷', ['swiftShip']);
-const arcaneRaid = route('arcane-raid', '奥术突袭', ['arcaneShip', 'raidShip']);
+const swift = route('swift', '迅捷', ['swiftShip']); // i18n-ignore: host-compat internal strategy/data labels; never UI text
+const arcaneRaid = route('arcane-raid', '奥术突袭', ['arcaneShip', 'raidShip']); // i18n-ignore: host-compat internal strategy/data labels; never UI text
 const routes = Object.freeze([swift, arcaneRaid]);
 // [ASSUMED] Start with Swift; Arcane/Raid is a pivot after actually acquiring Surtr.
 // Match option exists for controlled botbench comparisons, not as a gameplay setting.
@@ -554,7 +554,7 @@ function layoutValue(gd, units, plan, bonds) {
   return Math.min(3, layers * 0.09);
 }
 
-export const siracusa = Object.freeze({ lateUpgradeLineup: true, lateSixMature, name: '叙拉古', core: CORE, spendAllFunds: true, routes, ids, selectRoute, routeScores, levelTarget,
+export const siracusa = Object.freeze({ lateUpgradeLineup: true, lateSixMature, name: '叙拉古', core: CORE, spendAllFunds: true, routes, ids, selectRoute, routeScores, levelTarget, // i18n-ignore: host-compat internal strategy/data labels; never UI text
   buyBonus, unitBonus, keep, refreshValue, trade, cycleValue, lineupBonus, layoutValue, spendReserve, upgradeReserve,
   criticalBuy, beforeUpgrade, priorityLevel, readyForUpgrade, itemBonus, holdItem, itemReplacement, useEconomy, preserve, purchaseReserve, replacementCandidates,
   visibleAirOnly: (m) => siracusaAdjustment(m, 'air'),

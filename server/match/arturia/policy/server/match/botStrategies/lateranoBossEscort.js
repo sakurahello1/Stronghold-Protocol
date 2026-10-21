@@ -214,6 +214,7 @@ export function* bossEscortSteps(m, ps, helpers) {
         return battle;
       } });
       const job = yield* createBossRehearsalSteps(owner, ps, chosen, indices.map(i => plans[i]), inputs);
+      // host-compat loop-cap: finite forecast candidates and per-trial tick cap; run advances its saved cursor
       if (!job) return; while (!job.run(4)) yield;
       for (const row of job.outcomes) results[indices[row.index]] = { ...row, index: indices[row.index] };
     }

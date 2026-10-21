@@ -89,6 +89,7 @@ export function* healingChoiceSteps(m, ps, recipe, helpers) {
   const job = yield* createForecastSteps(m, ps, original, plans,
     p => helpers.bossInputSteps(m, ps, p.lineup, p, { keepWithdrawn: true }), policy);
   if (!job) return;
+  // host-compat loop-cap: finite forecast candidates and per-trial tick cap; run advances its saved cursor
   while (!job.run(4)) yield;
   const snapshot = () => field(ps).map(p => ({ uid: p.uid, id: p.id, key: ps.find(p.uid).key, dir: p.dir }));
   const before = snapshot();

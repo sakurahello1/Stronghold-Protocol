@@ -23,6 +23,7 @@ export function duplicatePrepExtra(gd, units, bonds, event) {
   for (const u of units) {
     let gs = traits(u), target = u;
     const seen = new Set();
+    // host-compat loop-cap: seen unit uid set breaks every repeated front-neighbour chain
     while (gs.length && gs.every(g => g.effectKey.startsWith('SERVER_FRONT_SAME_EFFECT_'))) {
       seen.add(target.uid); target = front(target);
       if (!target || seen.has(target.uid)) { gs = []; break; }
@@ -118,6 +119,7 @@ export function* duplicateGrowthSteps(m, ps, recipe, helpers, options = {}) {
   const job = yield* createForecastSteps(m, ps, original, plans,
     p => helpers.bossInputSteps(m, ps, p.lineup, p, { keepWithdrawn: true }), policy);
   if (!job) return;
+  // host-compat loop-cap: finite forecast candidates and per-trial tick cap; run advances its saved cursor
   while (!job.run(4)) yield;
   const snapshot = () => field(ps).map(p => ({ uid: p.uid, id: p.id, key: ps.find(p.uid).key, dir: p.dir }));
   const before = snapshot();
