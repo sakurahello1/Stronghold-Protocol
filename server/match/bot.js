@@ -1,3 +1,5 @@
+import { isLavinia, BAND as LAVINIA_BAND, pickCard as laviniaPickCard, prepBegin as laviniaPrepBegin, prepEnd as laviniaPrepEnd } from './lavinia/index.js';
+import { isArturia, BAND, pickCard as arturiaPickCard, prepBegin as arturiaPrepBegin, prepEnd as arturiaPrepEnd } from './arturia/index.js';
 // server/match/bot.js — AI player (DESIGN §6.6). Used for AI teammates and "AI 托管" (g.autoplay; a departed human
 // is eliminated, Match._quit). Every action goes through the same validated
 // PlayerState handlers a human uses; randomness only from the match's bot rng (deterministic per seed).
@@ -148,6 +150,8 @@ const DEFAULT_MELEE_RANGE = [[0, 0], [0, 1]];
  */
 const SOFT_BAND_RESERVE = 0.25;
 export function botPickBand(m, ps) {
+  if (isLavinia(m, ps)) return LAVINIA_BAND;
+  if (isArturia(m, ps)) return BAND;
   const gd = ps?.gd || m.gd;
   const ids = gd.bandIds();
   if (!ids.length) return gd.defaultBandId;
@@ -184,6 +188,8 @@ export function botPickBand(m, ps) {
  * buffs come before bounties.
  */
 export function botPickCard(m, ps, cards, available) {
+  if (isLavinia(m, ps)) return laviniaPickCard(m, ps, cards, available);
+  if (isArturia(m, ps)) return arturiaPickCard(m, ps, cards, available);
   let best = available[0];
   let bestScore = -Infinity;
   for (const i of available) {
@@ -1431,6 +1437,8 @@ export function botPrepBegin(m, ps) {
  * Returns the rehearsal job (or null).
  */
 export function* botPrepBeginSteps(m, ps, { delegate = false } = {}) {
+  if (isLavinia(m, ps)) return yield* laviniaPrepBegin(m, ps);
+  if (isArturia(m, ps)) return yield* arturiaPrepBegin(m, ps);
   if (!ps.alive || ps.ready) return null;
   m.autoPickPersonalChoice(ps, 'bot');
   // 1. reward offers (free)
@@ -1463,6 +1471,8 @@ export function botPrepEnd(m, ps, job = null) {
 
 /** botPrepEnd as a step generator (see botPrepBeginSteps). */
 export function* botPrepEndSteps(m, ps, job = null) {
+  if (isLavinia(m, ps)) return yield* laviniaPrepEnd(m, ps, job);
+  if (isArturia(m, ps)) return yield* arturiaPrepEnd(m, ps, job);
   if (!ps.alive || ps.ready) return;
   if (job && job.done && job.best !== job.plans[0]) yield* applyPlanSteps(m, ps, job.chosen, job.best);
   // 5. temp → hand / sell / destroy; keep one hand slot free for next round's merges

@@ -348,7 +348,7 @@ export class Room {
       prepTimer: this.prepTimer,
       inMatch: !!this.match,
       seats: this.seats.map((s) => (s
-        ? { seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, ready: s.ready, connected: s.connected && !s.left,
+        ? { seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, ready: s.ready, connected: s.connected && !s.left, ...(s.botPersona ? { botPersona: s.botPersona } : {}),
           // a room with gameplay plugins (header "Gameplay plugins"): has this player's page loaded and checked its content?
           ...(this.modded && !s.isBot ? { content: s.content || 'loading' } : {}) }
         : null)),
@@ -646,7 +646,7 @@ export class Lobby {
       case 'room.setDifficulty': return this.setDifficulty(session, msg);
       case 'room.setAiPicksLast': return this.setAiPicksLast(session, msg);
       case 'room.setPrepTimer': return this.setPrepTimer(session, msg);
-      case 'room.addBot': return this.addBot(session);
+      case 'room.addBot': return this.addBot(session, msg);
       case 'room.removeBot': return this.removeBot(session, msg);
       case 'room.kick': return this.kick(session, msg);
       case 'room.start': return this.start(session);
@@ -894,6 +894,8 @@ export class Lobby {
     if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
     if (room.match) return fail(ERR.ROOM_STARTED);
     this.dropReplay(room, session.playerId);
+    if (difficulty === 'FUNNY' && room.seats.some(s => s?.botPersona === 'arturia')) return fail(ERR.BAD_TARGET);
+    if (difficulty === 'FUNNY' && room.seats.some(s => s?.botPersona === 'lavinia')) return fail(ERR.BAD_TARGET);
     // a plugin mode chosen (header "Gameplay plugins") carries its own difficulty: picking one leaves it
     if (room.difficulty !== difficulty || room.content?.modeId) {
       room.difficulty = difficulty;
@@ -1103,7 +1105,7 @@ export class Lobby {
     return OK;
   }
 
-  addBot(session) {
+  addBot(session, { persona } = {}) {
     const room = this.roomOf(session);
     if (!room) return fail(ERR.NOT_IN_ROOM);
     if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
@@ -1112,11 +1114,16 @@ export class Lobby {
     if (room.mode === 'solo') return fail(ERR.ROOM_FULL, 'solo rooms cannot have AI teammates');
     const idx = room.freeSeat();
     if (idx < 0) return fail(ERR.ROOM_FULL);
+    if (persona !== undefined && persona !== 'arturia' && persona !== 'lavinia') return fail(ERR.BAD_TARGET);
+    if (persona === 'arturia' && room.seats.some(s => s?.botPersona === 'arturia')) return fail(ERR.ALREADY);
+    if (persona === 'arturia' && room.difficulty === 'FUNNY') return fail(ERR.BAD_TARGET);
+    if (persona === 'lavinia' && room.seats.some(s => s?.botPersona === 'lavinia')) return fail(ERR.ALREADY);
+    if (persona === 'lavinia' && room.difficulty === 'FUNNY') return fail(ERR.BAD_TARGET);
     const used = new Set(room.seats.filter((s) => s && s.isBot).map((s) => s.name));
-    const name = BOT_NAMES.find((n) => !used.has(n)) || `AI·${idx + 1}`;
+    const name = persona === 'lavinia' ? 'AI·拉维妮娅' : persona === 'arturia' ? 'AI·阿尔图罗' : BOT_NAMES.find((n) => !used.has(n)) || `AI·${idx + 1}`; // i18n-ignore: player name
     let playerId;
     do playerId = 'ai_' + randomBytes(4).toString('hex'); while (room.seatOf(playerId));
-    room.seats[idx] = { seat: idx, playerId, name, isBot: true, ready: true, connected: true, left: false };
+    room.seats[idx] = { seat: idx, playerId, name, isBot: true, ready: true, connected: true, left: false, ...(persona ? { botPersona: persona } : {}) };
     this.broadcastState(room);
     return OK;
   }
@@ -1163,6 +1170,8 @@ export class Lobby {
     if (!room) return fail(ERR.NOT_IN_ROOM);
     if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
     if (room.match) return fail(ERR.ROOM_STARTED);
+    if (room.seats.some(s => s?.botPersona === 'arturia') && (room.difficulty === 'FUNNY' || room.modded)) return fail(ERR.BAD_TARGET);
+    if (room.seats.some(s => s?.botPersona === 'lavinia') && (room.difficulty === 'FUNNY' || room.modded)) return fail(ERR.BAD_TARGET);
     const humans = room.activeHumans();
     if (room.content?.trusted && humans.some(s => s.consentCs !== room.content.cs)) return fail(ERR.PLUGIN_CONSENT);
     for (const s of humans) {
@@ -1407,7 +1416,7 @@ export class Lobby {
       // a setting checked for another content is filtered to this room's data (header "Gameplay plugins")
       const own = s.isBot ? null : this.seatSettings(room, s, data);
       return {
-        seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, connected: s.connected,
+        seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, connected: s.connected, ...(s.botPersona ? { botPersona: s.botPersona } : {}),
         // DESIGN §16: the human's checked operator loadout and (0.2.2) per-operator 潜能 / 练度 (bots fight with the defaults)
         loadout: own ? own.loadout : null,
         ops: own ? own.ops : null,

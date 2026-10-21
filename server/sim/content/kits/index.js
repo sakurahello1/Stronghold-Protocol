@@ -172,6 +172,8 @@ async function loadKitFile(file) {
 const MODULES = await Promise.all(KIT_FILES.map((group) => Promise.all(group.map(loadKitFile))));
 const STANDIN_MODULES = await Promise.all(STANDIN_KIT_FILES.map(loadKitFile));
 const OPERATOR_MODULES = await Promise.all(OPERATOR_KIT_FILES.map(loadKitFile));
+export const OPTIONAL_OPERATOR_KIT_FILES = Object.freeze(['optional-oblvns.js', 'optional-makoto.js']);
+const OPTIONAL_MODULES = await Promise.all(OPTIONAL_OPERATOR_KIT_FILES.map(loadKitFile));
 const registryOf = (m) => (m && m.default && typeof m.default === 'object' ? m.default : {});
 
 /** The registry of each tier group (index 0 = tier 1): baseChessId → kit builder, in KIT_FILES order. */
@@ -183,11 +185,14 @@ export const STANDIN_KITS = Object.freeze(Object.assign({}, ...STANDIN_MODULES.m
 /** The 自选 operator kits: owned-6★ charId → kit builder, in OPERATOR_KIT_FILES order. */
 export const OPERATOR_KITS = Object.freeze(Object.assign({}, ...OPERATOR_MODULES.map(registryOf)));
 
+/** Reviewed local kits available by explicit content kitRef only; they do not join the vanilla DIY pool. */
+export const OPTIONAL_OPERATOR_KITS = Object.freeze(Object.assign({}, ...OPTIONAL_MODULES.map(registryOf)));
+
 /**
  * The merged kit registry: baseChessId → (bb, chess, def) => Kit, tier 1 … tier 6, then the stand-ins' charIds, then
  * the 自选 operators' charIds.
  */
-export const KITS = Object.freeze(Object.assign({}, ...TIER_KITS, STANDIN_KITS, OPERATOR_KITS));
+export const KITS = Object.freeze(Object.assign({}, ...TIER_KITS, STANDIN_KITS, OPERATOR_KITS, OPTIONAL_OPERATOR_KITS));
 
 /**
  * Every character a 自选 pick may field with a faithful kit: the 预备干员 (GENERIC_KIT_CHARS), the stand-ins with a kit

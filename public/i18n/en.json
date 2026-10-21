@@ -2215,5 +2215,8 @@
   "等待启用2倍速（{votes}/{required}票）": "Waiting for 2× speed ({votes}/{required} votes)",
   "仅仍在对局中的真人玩家可投票": "Only human players still in the match can vote",
   "已选择启用2倍速，点击撤回": "Voted for 2× speed; click to withdraw",
-  "投票启用2倍速": "Vote for 2× speed"
+  "投票启用2倍速": "Vote for 2× speed",
+  "添加精英干员": "Add elite AI",
+  "阿尔图罗": "Arturia",
+  "拉维妮娅": "Lavinia"
 }

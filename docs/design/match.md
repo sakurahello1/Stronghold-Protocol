@@ -233,3 +233,8 @@ other owners do not replenish spent stock. [ASSUMED] Keep valid board cards in r
 index order, remove obsolete/excess cards and temp deadlines, and grant missing copies via normal overflow.
 These do not alter the default rules above. See
 [PLUGINS.md](../PLUGINS.md#rule-switches) for limits and assumptions.
+
+
+### Local 0.3.1 optional recruits and elite AI
+
+Owner request, 2026-10-21: the collab-recruits plugin adds only two owned DIY operators to tiers 5/6, retains all existing bonds, and preserves the module-stage difference. Optional native kitRefs do not expand vanilla KITTED_CHARS or data. Elite AI keeps its original content-room guard; ordinary AI is unchanged. See [local integration contract](../COLLAB_RECRUITS.md).

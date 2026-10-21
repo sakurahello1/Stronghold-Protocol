@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { KIT_FILES, TIER_KITS, KITS, STANDIN_KIT_FILES, STANDIN_KITS, OPERATOR_KIT_FILES, OPERATOR_KITS, GENERIC_KIT_CHARS, KITTED_CHARS } from '../../server/sim/content/kits/index.js';
+import { KIT_FILES, TIER_KITS, KITS, STANDIN_KIT_FILES, STANDIN_KITS, OPERATOR_KIT_FILES, OPERATOR_KITS, GENERIC_KIT_CHARS, KITTED_CHARS, OPTIONAL_OPERATOR_KIT_FILES, OPTIONAL_OPERATOR_KITS } from '../../server/sim/content/kits/index.js';
 import { KITS as CONTENT_KITS } from '../../server/sim/content/index.js';
 import { diyRecord } from '../../shared/diy.js';
 import { normalizeChess } from '../../server/sim/simdata.js';
@@ -24,7 +24,7 @@ const BACKUPS = JSON.parse(readFileSync(join(ROOT, 'data/backups.json'), 'utf8')
 const jsIn = (dir) => readdirSync(join(KIT_DIR, dir)).filter((f) => f.endsWith('.js')).sort();
 
 test('kits/index.js lists every kit file of kits/ops/ exactly once, and only those', () => {
-  const listed = [...KIT_FILES.flat(), ...STANDIN_KIT_FILES, ...OPERATOR_KIT_FILES];
+  const listed = [...KIT_FILES.flat(), ...STANDIN_KIT_FILES, ...OPERATOR_KIT_FILES, ...OPTIONAL_OPERATOR_KIT_FILES];
   assert.equal(new Set(listed).size, listed.length, 'a file listed twice');
   assert.deepEqual([...listed].sort(), jsIn('ops'));
 });
@@ -86,8 +86,8 @@ test('a kit file <chessId>-<codename>.js registers the kit of <chessId>_a (coden
 });
 
 test('the registry is the tier groups in KIT_FILES order, then the stand-ins, then the 自选 operators, one key per file; content/index.js serves the same object', () => {
-  assert.deepEqual(Object.keys(KITS), [...TIER_KITS.flatMap((t) => Object.keys(t)), ...Object.keys(STANDIN_KITS), ...Object.keys(OPERATOR_KITS)]);
-  assert.equal(Object.keys(KITS).length, KIT_FILES.flat().length + STANDIN_KIT_FILES.length + OPERATOR_KIT_FILES.length, 'one key per file, none twice');
+  assert.deepEqual(Object.keys(KITS), [...TIER_KITS.flatMap((t) => Object.keys(t)), ...Object.keys(STANDIN_KITS), ...Object.keys(OPERATOR_KITS), ...Object.keys(OPTIONAL_OPERATOR_KITS)]);
+  assert.equal(Object.keys(KITS).length, KIT_FILES.flat().length + STANDIN_KIT_FILES.length + OPERATOR_KIT_FILES.length + OPTIONAL_OPERATOR_KIT_FILES.length, 'one key per file, none twice');
   assert.equal(CONTENT_KITS, KITS);
 });
 
@@ -102,5 +102,15 @@ test('kit files stay browser-safe and deterministic: no Node-only or server-only
       assert.ok(!/(^|\/)(match|net|public)\/|(^|\/)index\.js$/.test(p), `${f}: imports ${p}`);
     }
     assert.ok(!/Math\.random|Date\.now|performance\.now|setTimeout|setInterval/.test(src), `${f}: clock / Math.random (use battle.rng, battle.after / every)`);
+  }
+});
+
+test('optional kits are explicit references and cannot expand the vanilla owned pool', async () => {
+  assert.deepEqual(Object.keys(OPTIONAL_OPERATOR_KITS).sort(), ['char_4182_oblvns','char_4217_makoto']);
+  for (const [id, build] of Object.entries(OPTIONAL_OPERATOR_KITS)) {
+    assert.equal(typeof build, 'function');
+    assert.equal(KITS[id], build);
+    assert.ok(!KITTED_CHARS.includes(id));
+    assert.ok(!BACKUPS.diy.ownedPool.includes(id));
   }
 });

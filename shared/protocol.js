@@ -509,7 +509,7 @@ export const C2S = {
   // human seat before every AI seat (server/match/match/phases.js humansFirst); room.state.aiPicksLast
   'room.setAiPicksLast': { on: isBool },
   'room.setPrepTimer': { on: isBool },
-  'room.addBot': {},
+  'room.addBot': { persona: optional((v) => v === 'arturia' || v === 'lavinia') },
   'room.removeBot': { seat: (v) => isInt(v, 0, MAX_SEATS - 1) },
   // the host removes another human before the match (server/lobby.js kick; community report #17); playerId = the one the
   // host confirmed — a seat that changed hands meanwhile is refused

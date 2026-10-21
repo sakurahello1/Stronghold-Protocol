@@ -679,3 +679,8 @@ A bounded same-server room directory lists ordinary rooms only; test rooms retai
 Field fallback recovery has two automatic retries, separate from the two existing useful-event retries [ASSUMED].
 Recovered views receive v0.3.1 seat identity and current skins before publication, and live skin subscriptions remain.
 The official result flow is unchanged; see [CUSTOM_PATCH](../CUSTOM_PATCH.md) for intentionally dropped result additions.
+
+
+### Local 0.3.1 elite recruitment and optional personas
+
+The reviewed Arturia/Lavinia source extensions add the explicit waiting-room elite picker. The selector remains unavailable in unsupported/content-plugin rooms. Makoto persona clip roles apply only to his specific spine ids. The existing room directory, prep checkbox, speed HUD, skin updates and bounded renderer recovery remain. See [local integration contract](../COLLAB_RECRUITS.md).

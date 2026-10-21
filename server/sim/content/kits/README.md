@@ -343,3 +343,8 @@ Each item is a mistake this project already made once. Tick every one for every 
 DESIGN, the changelog and issues cite kits as `kits/tierN.js <name>` (before 0.2.0). That kit is now
 `ops/<chess id>-<codename>.js` — search `ops/` for the chess id, the code name or the Chinese name — and the helpers of
 that file are in `shared/tierN.js`.
+
+
+## Optional local kitRefs
+
+OPTIONAL_OPERATOR_KIT_FILES / OPTIONAL_OPERATOR_KITS contain reviewed native builders for optional content records. They join KITS by explicit charId reference but not OPERATOR_KITS or KITTED_CHARS; a local content plugin supplies the namespaced records. Vanilla owned selection remains unchanged. See [COLLAB_RECRUITS.md](../../../../docs/COLLAB_RECRUITS.md).

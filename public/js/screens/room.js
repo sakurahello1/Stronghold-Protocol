@@ -1,3 +1,5 @@
+import { avatarUrl } from '../assets.js';
+import { data, useData } from '../data.js';
 // Room screen (同盟等待室): 4 seat cards (avatar frame, name, ready state, AI badge, host crown),
 // host controls (difficulty picker, add/remove AI and the 「AI 队友最后选择」 switch in co-op, start), invite code with
 // copy code / copy link, ready toggle and leave.
@@ -119,7 +121,52 @@ export function inviteLink(code) {
  */
 export { copyText };
 
-function SeatCard({ seat, index, room, facts, myId, busy, onAddBot, onRemoveBot, onKick }) {
+function ArturiaAvatar(props) {
+  useData("assets");
+  return html`<${AvatarFrame} ...${props} src=${avatarUrl(data.get("assets"), "char_245_cello", { e2: true })} />`;
+}
+function LaviniaAvatar(props) {
+  useData("assets");
+  return html`<${AvatarFrame} ...${props} src=${avatarUrl(data.get("assets"), "char_4065_judge", { e2: true })} />`;
+}
+const ELITE_RECRUITS = Object.freeze([{ id: "arturia", label: () => t("阿尔图罗") }, { id: "lavinia", label: () => t("拉维妮娅") }]);
+function EliteRecruit({ room, busy, onAdd }) {
+  const [open, setOpen] = useState(false), root = useRef(null);
+  const unavailable = option => room.seats.some(s => s?.botPersona === option.id);
+  const disabled = !!busy || room.difficulty === "FUNNY" || room.content?.vanilla === false || ELITE_RECRUITS.every(unavailable);
+  useEffect(() => { if (disabled) setOpen(false); }, [disabled]);
+  useEffect(() => {
+    if (!open) return;
+    root.current?.querySelector("[role=menuitem]:not(:disabled)")?.focus();
+    const outside = e => { if (!root.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [open]);
+  const keydown = e => {
+    if (e.key === "Escape" && open) {
+      e.preventDefault(); setOpen(false); root.current?.querySelector("[aria-haspopup=menu]")?.focus();
+    } else if (["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) {
+      e.preventDefault();
+      if (!open) { setOpen(true); return; }
+      const entries = [...root.current.querySelectorAll("[role=menuitem]:not(:disabled)")];
+      if (!entries.length) return;
+      const at = entries.indexOf(document.activeElement);
+      const next = e.key === "Home" ? 0 : e.key === "End" ? entries.length - 1 : (at + (e.key === "ArrowUp" ? -1 : 1) + entries.length) % entries.length;
+      entries[next].focus();
+    }
+  };
+  return html`<div ref=${root} class="elite-recruit" style="width:100%;position:relative" onKeyDown=${keydown}
+    onBlur=${e => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}>
+    <${Button} variant="secondary" size="sm" block=${true} disabled=${disabled} aria-haspopup="menu" aria-expanded=${open ? "true" : "false"}
+      onClick=${() => setOpen(!open)}>${t("添加精英干员")} <span aria-hidden="true">▾</span><//>
+    ${open && html`<div role="menu" aria-label=${t("添加精英干员")} style="display:flex;flex-direction:column;gap:.04rem;margin-top:.04rem;padding:.04rem;border:1px solid var(--line-2);background:var(--bg-1,#0b0e0d)">
+      ${ELITE_RECRUITS.map(option => html`<${Button} key=${option.id} role="menuitem" variant="secondary" size="sm" block=${true}
+        disabled=${unavailable(option)} onClick=${() => { setOpen(false); onAdd(option.id); }}>${option.label()}<//>`)}
+    </div>`}
+  </div>`;
+}
+
+function SeatCard({ seat, index, room, facts, myId, busy, onAddBot, onAddElite, onRemoveBot, onKick }) {
   const coop = room.mode !== 'solo';
   if (!seat) {
     const canAdd = coop && facts.isHost;
@@ -132,7 +179,8 @@ function SeatCard({ seat, index, room, facts, myId, busy, onAddBot, onRemoveBot,
       </div>
       <footer class="seat__foot">
         ${canAdd
-          ? html`<${Button} variant="secondary" size="sm" icon="robot" block=${true} loading=${busy === `add`} onClick=${onAddBot}>${t('添加 AI 队友')}<//>`
+          ? html`<div style="display:flex;flex-direction:column;gap:.08rem;width:100%"><${Button} variant="secondary" size="sm" icon="robot" block=${true} loading=${busy === `add`} onClick=${onAddBot}>${t('添加 AI 队友')}<//>
+            <${EliteRecruit} room=${room} busy=${busy} onAdd=${onAddElite} /></div>`
           : html`<span class="seat__state t-dim">${t('空位')}</span>`}
       </footer>
     </article>`;
@@ -153,7 +201,7 @@ function SeatCard({ seat, index, room, facts, myId, busy, onAddBot, onRemoveBot,
     </header>
     <div class="seat__art">
       <div class="seat__stripes" aria-hidden="true"></div>
-      <${AvatarFrame} size="xl" name=${seat.name} seat=${index} bot=${seat.isBot} self=${isMe} ready=${state === 'ready'} offline=${offline} />
+      <${seat.isBot && seat.botPersona === 'lavinia' ? LaviniaAvatar : seat.isBot && seat.botPersona === 'arturia' ? ArturiaAvatar : AvatarFrame} size="xl" name=${seat.name} seat=${index} bot=${seat.isBot} self=${isMe} ready=${state === 'ready'} offline=${offline} />
       ${seat.isBot ? html`<span class="seat__bot-label"><${Icon} name="robot" />${t('AI 队友')}</span>` : null}
     </div>
     <div class="seat__who">
@@ -286,6 +334,7 @@ export function RoomScreen() {
   const toggleReady = () => run('ready', () => net.request('room.ready', { ready: !myReady }));
   const start = () => run('start', () => net.request('room.start', {}));
   const addBot = () => run('add', () => net.request('room.addBot', {}));
+  const addElite = persona => run('add', () => net.request('room.addBot', { persona }));
   const removeBot = (seat) => run(`rm${seat}`, () => net.request('room.removeBot', { seat }));
   // the host removes a human before the match (community report #17): asked first; the player may join again. The
   // confirmed player's id goes along: if they left and someone else took the seat meanwhile, the server refuses it.
@@ -364,7 +413,7 @@ export function RoomScreen() {
 
     <main class=${`seats${coop ? '' : ' seats--solo'}`}>
       ${facts.seats.map((s, i) => html`<${SeatCard} key=${s ? `p${s.playerId}` : `e${i}`} seat=${s} index=${i} room=${room} facts=${facts}
-        myId=${me.playerId} busy=${busy} onAddBot=${addBot} onRemoveBot=${removeBot} onKick=${kick} />`)}
+        myId=${me.playerId} busy=${busy} onAddBot=${addBot} onAddElite=${addElite} onRemoveBot=${removeBot} onKick=${kick} />`)}
       ${coop ? null : html`<aside class="solo-brief brackets">
         <${MicroLabel} tone="mint">BRIEFING<//>
         <h2>${DIFFICULTY_NAMES[room.difficulty] ? t(DIFFICULTY_NAMES[room.difficulty]) : ''}<span class="num t-dim"> ${info.code}</span></h2>
