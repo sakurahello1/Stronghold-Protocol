@@ -7,6 +7,11 @@
 
 需要 Node.js 22 或 24（CI 在这两个版本上跑）。
 
+Windows CI 使用固定源码提交、校验 SHA256 后构建的 libarchive，而不使用运行器自带的 `tar`：系统
+bsdtar 3.8.9 处理部分 Unicode 文件名会崩溃（[官方修复 #3696](https://github.com/libarchive/libarchive/pull/3696)）。
+构建配置和缓存位于 `.github/actions/windows-archiver/`；仍运行原有中文文件名与 ZIP 校验测试，不跳过用例。
+此设置仅作用于 GitHub Windows 运行器，不安装或替换玩家、本地开发机的压缩工具。
+
 ```bash
 git clone https://github.com/sganggs/Stronghold-Protocol.git
 cd Stronghold-Protocol

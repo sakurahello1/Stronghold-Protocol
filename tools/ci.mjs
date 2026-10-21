@@ -50,6 +50,7 @@ export const TEST_FILES = ['test/**/*.test.js', 'test/e2e/coop.e2e.mjs', 'plugin
 export const SKIPPED_CI_STEPS = [
   { uses: 'actions/checkout', why: 'GitHub runner: the checkout is this folder' },
   { uses: 'actions/setup-node', why: 'GitHub runner: the Node.js of this machine is used' },
+  { uses: './.github/actions/windows-archiver', why: 'GitHub Windows runner: select a fixed native archiver; local tools are unchanged' },
   { name: 'Install (npm ci → postinstall copies public/vendor)', why: 'run `npm ci` yourself; it is not a check' },
 ];
 

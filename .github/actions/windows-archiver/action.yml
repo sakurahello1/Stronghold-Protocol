@@ -1,0 +1,33 @@
+name: Fixed Windows archiver
+description: Build and select a checksum-pinned libarchive containing the Windows Unicode filename fix.
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@v6
+      id: cache
+      with:
+        path: ${{ runner.tool_cache }}/sp-windows-archiver
+        key: windows-archiver-${{ runner.arch }}-${{ hashFiles('.github/actions/windows-archiver/**') }}
+    - name: Build pinned libarchive and zlib
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: |
+        & '${{ github.action_path }}/build.ps1' -Destination (Join-Path $env:RUNNER_TOOL_CACHE 'sp-windows-archiver')
+    - name: Select the fixed archiver
+      shell: pwsh
+      run: |
+        $archiver = Join-Path $env:RUNNER_TOOL_CACHE 'sp-windows-archiver'
+        if (!(Test-Path -LiteralPath (Join-Path $archiver 'tar.exe') -PathType Leaf)) { throw 'Fixed tar.exe is missing' }
+        $archiver | Out-File -LiteralPath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Verify Unicode ZIP packaging with the original assertions
+      shell: pwsh
+      run: |
+        $expected = Join-Path $env:RUNNER_TOOL_CACHE 'sp-windows-archiver/tar.exe'
+        if ((Get-Command tar -CommandType Application).Source -ne $expected) { throw 'The system tar still shadows the fixed tool' }
+        Write-Output 'System archiver (not used by the tests):'
+        & "$env:SystemRoot/System32/tar.exe" --version
+        Write-Output 'Selected archiver:'
+        tar --version
+        if ($LASTEXITCODE -ne 0) { throw 'The fixed archiver cannot start' }
+        node --test test/update-package.test.js
+        exit $LASTEXITCODE

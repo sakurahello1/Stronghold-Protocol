@@ -43,6 +43,12 @@ jobs:
       - name: Install (npm ci → postinstall copies public/vendor)
         run: npm ci --no-audit --no-fund
 
+      # The system bsdtar 3.8.9 crashes on Unicode filenames (libarchive #3681 / #3696).
+      # Keep the original packaging tests; use a checksum-pinned build containing the upstream fix.
+      - name: Set up fixed Windows archiver
+        if: runner.os == 'Windows'
+        uses: ./.github/actions/windows-archiver
+
       - name: Setup check (no downloads)
         run: node tools/setup.mjs --check --no-local
 
