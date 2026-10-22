@@ -237,4 +237,4 @@ These do not alter the default rules above. See
 
 ### Local 0.3.1 optional recruits and elite AI
 
-Owner request, 2026-10-21: the collab-recruits plugin adds only two owned DIY operators to tiers 5/6, retains all existing bonds, and preserves the module-stage difference. Optional native kitRefs do not expand vanilla KITTED_CHARS or data. Elite AI keeps its original content-room guard; ordinary AI is unchanged. See [local integration contract](../COLLAB_RECRUITS.md).
+Owner request, 2026-10-21: the collab-recruits plugin adds only two owned DIY operators to tiers 5/6, retains all existing bonds, and preserves the module-stage difference. Optional native kitRefs do not expand vanilla KITTED_CHARS or data. Follow-up, 2026-10-23: elite AI accepts this additive-only plugin after server-side composed-data verification, including optional cosmetics; unrelated gameplay plugins and FUNNY remain blocked. Policies, fixed bands, ordinary AI and bot DIY loadouts are unchanged. See [local integration contract](../COLLAB_RECRUITS.md).

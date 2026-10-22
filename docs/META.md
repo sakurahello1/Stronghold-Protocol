@@ -1085,4 +1085,4 @@ and result grace on rate changes. Boss clocks and deterministic simulation steps
 See [the custom migration inventory](CUSTOM_PATCH.md); upstream 0.3.1 result contracts are retained without old LP additions.
 
 
-Local fork integration (2026-10-21): optional five/six-tier collab DIY records and explicit elite AI seats are specified in [COLLAB_RECRUITS.md](COLLAB_RECRUITS.md); the ordinary room/AI/pool behavior is preserved.
+Local fork integration (2026-10-21; compatibility follow-up 2026-10-23): optional five/six-tier collab DIY records and explicit elite AI seats are specified in [COLLAB_RECRUITS.md](COLLAB_RECRUITS.md). The reviewed additive-only plugin can accompany elite AI after server-side verification; other gameplay plugins and FUNNY stay blocked. The original policies, fixed bands, bot DIY loadouts and ordinary room/AI/pool behavior are preserved.

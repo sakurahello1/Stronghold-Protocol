@@ -162,6 +162,8 @@
 //     a player seat (the seat is kept and given back on resume).
 
 import { randomBytes, randomInt } from 'node:crypto';
+import { eliteAiCompatible } from './plugins/eliteAiCompatibility.js';
+import { eliteAiAllowed } from '../shared/eliteAi.js';
 import { DIFFICULTIES, ERR, MAX_SEATS, MAX_SPECTATORS, ROOM_CODE_LEN, modeIdFor } from '../shared/constants.js';
 import { checkLoadout, checkLoadoutOps, cultivationCharIds, checkNotOwned, checkDiyPicks, charPotentialChanges, checkSkinSelection, operatorCharIds } from '../shared/protocol.js';
 import { encode, isDroppable, isErrCode, sendRaw, sendSession } from './net.js';
@@ -309,7 +311,7 @@ export class Room {
      * content set with gameplay plugins (header "Gameplay plugins": `vanilla: false`, its own cs, `dataBytes`, `modes`,
      * `modeId`); null when the lobby has no content identity (room.state then carries none).
      * @type {Readonly<{ cs: string, vanilla: boolean, plugins: readonly object[], vs?: string, warnings?: readonly object[],
-     *   bytes?: number, dataBytes?: number, modes?: readonly object[], modeId?: string }> | null}
+     *   bytes?: number, dataBytes?: number, modes?: readonly object[], modeId?: string, eliteAiCompatible?: boolean }> | null}
      */
     this.content = null;
     /** Test room (DESIGN §34.8). Set only at create, and only when the process switch is on. Never flipped later. */
@@ -1003,10 +1005,17 @@ export class Lobby {
     const frozen = (a) => Object.freeze((Array.isArray(a) ? a : []).map((p) => Object.freeze({ ...p })));
     // the operators its plugins add to a 自选 slot's list (welcome.diyKitted holds the server's own): the pages' pickers
     const extra = modded && Array.isArray(kitted) ? kitted.filter((id) => typeof id === 'string' && !VANILLA_KITTED.has(id)).slice(0, 200) : [];
+    // Fail closed for unknown gameplay plugins; evaluated once when resolving the immutable content set.
+    let compatible = false;
+    if (modded) {
+      try { compatible = eliteAiCompatible(r.set, this.plugins.dataOf?.(cs), this.safeData()); }
+      catch (e) { this.log.warn('[lobby] elite AI compatibility could not be verified', e); }
+    }
     return {
       content: Object.freeze({
         cs: modded ? cs : this.vanilla.cs,
         vanilla: !modded,
+        ...(compatible ? { eliteAiCompatible: true } : {}),
         ...(vs ? { vs } : {}),
         plugins: frozen(list),
         ...(trusted ? {trusted} : {}),
@@ -1115,10 +1124,9 @@ export class Lobby {
     const idx = room.freeSeat();
     if (idx < 0) return fail(ERR.ROOM_FULL);
     if (persona !== undefined && persona !== 'arturia' && persona !== 'lavinia') return fail(ERR.BAD_TARGET);
+    if (persona && !eliteAiAllowed(room)) return fail(ERR.BAD_TARGET);
     if (persona === 'arturia' && room.seats.some(s => s?.botPersona === 'arturia')) return fail(ERR.ALREADY);
-    if (persona === 'arturia' && room.difficulty === 'FUNNY') return fail(ERR.BAD_TARGET);
     if (persona === 'lavinia' && room.seats.some(s => s?.botPersona === 'lavinia')) return fail(ERR.ALREADY);
-    if (persona === 'lavinia' && room.difficulty === 'FUNNY') return fail(ERR.BAD_TARGET);
     const used = new Set(room.seats.filter((s) => s && s.isBot).map((s) => s.name));
     const name = persona === 'lavinia' ? 'AI·拉维妮娅' : persona === 'arturia' ? 'AI·阿尔图罗' : BOT_NAMES.find((n) => !used.has(n)) || `AI·${idx + 1}`; // i18n-ignore: player name
     let playerId;
@@ -1170,8 +1178,7 @@ export class Lobby {
     if (!room) return fail(ERR.NOT_IN_ROOM);
     if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
     if (room.match) return fail(ERR.ROOM_STARTED);
-    if (room.seats.some(s => s?.botPersona === 'arturia') && (room.difficulty === 'FUNNY' || room.modded)) return fail(ERR.BAD_TARGET);
-    if (room.seats.some(s => s?.botPersona === 'lavinia') && (room.difficulty === 'FUNNY' || room.modded)) return fail(ERR.BAD_TARGET);
+    if (room.seats.some(s => s?.botPersona === 'arturia' || s?.botPersona === 'lavinia') && !eliteAiAllowed(room)) return fail(ERR.BAD_TARGET);
     const humans = room.activeHumans();
     if (room.content?.trusted && humans.some(s => s.consentCs !== room.content.cs)) return fail(ERR.PLUGIN_CONSENT);
     for (const s of humans) {

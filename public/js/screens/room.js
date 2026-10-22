@@ -1,4 +1,5 @@
 import { chessAvatarUrl } from '../ui/assetUrls.js';
+import { eliteAiAllowed } from '../../../shared/eliteAi.js';
 import { data, useData } from '../data.js';
 // Room screen (同盟等待室): 4 seat cards (avatar frame, name, ready state, AI badge, host crown),
 // host controls (difficulty picker, add/remove AI and the 「AI 队友最后选择」 switch in co-op, start), invite code with
@@ -133,7 +134,7 @@ const ELITE_RECRUITS = Object.freeze([{ id: "arturia", label: () => t("阿尔图
 function EliteRecruit({ room, busy, onAdd }) {
   const [open, setOpen] = useState(false), root = useRef(null);
   const unavailable = option => room.seats.some(s => s?.botPersona === option.id);
-  const disabled = !!busy || room.difficulty === "FUNNY" || room.content?.vanilla === false || ELITE_RECRUITS.every(unavailable);
+  const disabled = !!busy || !eliteAiAllowed(room) || ELITE_RECRUITS.every(unavailable);
   useEffect(() => { if (disabled) setOpen(false); }, [disabled]);
   useEffect(() => {
     if (!open) return;
