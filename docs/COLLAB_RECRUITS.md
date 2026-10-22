@@ -15,6 +15,8 @@ E2 Lv1/rank4 for normal forms and E2 Lv60/rank7 for elite forms, module stage 1 
 Table fingerprint: `sha256:c9cec47e05582306d8386ed3d58353e902862c2490e794f010e6814bb3b1ea21`.
 Official main/sub-power membership gives 丰川祥子 the existing fallback `emptyShip` and 结城理 the existing
 `lateranoShip` (hidden Laterano membership). No Ave Mujica/SEES covenant is introduced.
+The earlier locally installed pack uses `emptyShip` for 结城理 too. The compatibility check accepts both existing
+Makoto variants without rewriting the installed plugin; it does not accept arbitrary/new bond memberships.
 
 One source BB key, 丰川 S2 `attack@attack_speed`, is normalized to the existing `attack_speed` key and read under that
 name by its builder. Its exact official values (80/110) are retained; the plugin's bounds checks are not relaxed.
@@ -42,9 +44,15 @@ The waiting-room portraits use the existing pure URL helper to retain the vanill
 includes its GPL license and installation tools. Install Arturia first, then Lavinia; uninstall in reverse order.
 Private `.arturia-addon` / `.lavinia-addon` recovery journals stay local and are never committed.
 
-The waiting-room menu adds the selected elite AI. Ordinary AI remains unchanged. Both require a supported difficulty;
-the existing source refuses modified-content rooms. That restriction is retained: choose a vanilla room for elite AI,
-or a collab-recruits room for the new operators with ordinary AI. Do not silently remove the guard to claim compatibility.
+The waiting-room menu adds the selected elite AI. Ordinary AI remains unchanged. Both require a supported difficulty.
+Owner request, 2026-10-23: elite AI also accepts the reviewed `collab-recruits` room, with optional cosmetic companions.
+The server verifies composed gameplay data: only the two namespaced DIY units, their owned-pool entries and their
+existing-bond DIY records may be added. Existing operators, shops, economy, bonds, stages and modes must stay identical.
+Unknown gameplay plugins, script/trusted execution, new modes/rules and FUNNY remain unsupported. A plugin id alone is
+not approval; modified data must still pass this check. The server publishes `content.eliteAiCompatible` for the shared
+client/server recruitment/start predicate. Switching plugins rechecks it; content readiness is still required.
+The released policies are untouched. Elite bots still use their original fixed bands and no player DIY loadout;
+the human player's extra DIY picks do not enter the shared shop pool. This is compatibility, not new AI strategy support.
 
 The backend must restart after installation. Public HTTP, WS persona identity, fixed band picks, actual battle rounds,
 prep timer, speed voting and renderer recovery are checked on an isolated candidate before switching the live service.
