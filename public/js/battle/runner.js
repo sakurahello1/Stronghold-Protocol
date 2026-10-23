@@ -226,6 +226,10 @@ export function createBattleRunner(deps) {
   let simP = null;
   /** the content set simP was loaded for (null: the original content) */
   let simCs = null;
+  // One idle data-only worker per match/content set. Script workers keep their per-battle isolation.
+  let idleWorker = null;
+  let workerGeneration = 0;
+  const workerTickets = new WeakMap();
   let startSeq = 0;            // counts the b.starts: the latest one is the view asked for
   let loading = null;          // the pending entry of the latest b.start (shown when prepared)
   let rafH = null;
@@ -276,6 +280,71 @@ export function createBattleRunner(deps) {
     }) : loadSim(null)).catch((err) => { if (simP === p) { simP = null; simCs = null; } throw err; });
     simP = p;
     return p;
+  }
+
+  const reusableWorker = sim => sim?.remote && !sim.content?.scripts?.length && !deps.createHost;
+
+  function dropIdleWorker() {
+    ++workerGeneration;
+    const ticket = idleWorker;
+    idleWorker = null;
+    if (ticket) { ticket.onFailure = null; ticket.host.stop(); }
+  }
+
+  function makeWorker(sim) {
+    const ticket = { cs: sim.cs, host: null, ready: null, loaded: false, onFailure: null };
+    ticket.host = new WorkerSimHost({ workerFactory: deps.workerFactory,
+      timeoutMs: deps.workerTimeoutMs, loadTimeoutMs: deps.workerLoadTimeoutMs,
+      onFailure: err => {
+        if (idleWorker === ticket) idleWorker = null;
+        ticket.onFailure?.(err);
+      } });
+    workerTickets.set(ticket.host, ticket);
+    ticket.ready = ticket.host.load(sim.cs, sim.content).then(() => { ticket.loaded = true; return ticket.host; });
+    // A background warm-up has no battle to fail. The active caller still awaits the original rejecting promise.
+    ticket.ready.catch(() => {
+      if (idleWorker === ticket) idleWorker = null;
+      ticket.host.stop();
+    });
+    return ticket;
+  }
+
+  function warmWorker(cs) {
+    const generation = workerGeneration;
+    ensureSim(cs).then(sim => {
+      if (generation !== workerGeneration || !reusableWorker(sim)) return;
+      if (idleWorker?.cs === sim.cs && !idleWorker.host.stopped) return;
+      dropIdleWorker();
+      idleWorker = makeWorker(sim);
+    }).catch(() => {}); // An active b.start retries and preserves the usual server-takeover path.
+  }
+
+  function takeWorker(sim, onFailure) {
+    const cached = reusableWorker(sim) && idleWorker?.cs === sim.cs && !idleWorker.host.stopped ? idleWorker : null;
+    if (cached) idleWorker = null;
+    else if (idleWorker) dropIdleWorker();
+    const ticket = cached || makeWorker(sim);
+    ticket.onFailure = onFailure;
+    return ticket;
+  }
+
+  function releaseWorker(e, keepWorker) {
+    const host = e.host;
+    if (!host) return;
+    const ticket = workerTickets.get(host);
+    if (idleWorker === ticket && ticket) return;
+    if (!keepWorker || idleWorker || !ticket?.loaded || host.stopped || e.stepping || !e.battle || !reusableWorker(e.sim)) {
+      host.stop();
+      return;
+    }
+    ticket.onFailure = null;
+    idleWorker = ticket;
+    ticket.ready = host.reset().catch(err => {
+      if (idleWorker === ticket) idleWorker = null;
+      host.stop();
+      throw err;
+    });
+    ticket.ready.catch(() => {});
   }
 
   /** Counted leaks so far of every normal field simulated here: { [fieldId]: n } (user playtest #3 item 2). */
@@ -807,17 +876,23 @@ export function createBattleRunner(deps) {
       if (!csAccepted(e.spec.cs)) e.authoritative = false;
       let battle;
       try {
-        e.host = deps.createHost ? deps.createHost(sim, err => failWorker(e, err)) : sim.remote
-          ? new WorkerSimHost({ onFailure: err => failWorker(e, err), timeoutMs: deps.workerTimeoutMs })
-          : new InPageSimHost();
-        if (e.host.remote) {
-          await e.host.load(sim.cs, sim.content);
-          if (!wanted()) return;
+        if (sim.remote && !deps.createHost) {
+          const ticket = takeWorker(sim, err => failWorker(e, err));
+          e.host = ticket.host;
+          await ticket.ready;
+          if (!wanted()) { e.host.stop(); return; }
           await e.host.start(e.spec);
-        } else { e.host.sim = sim; e.host.start(e.spec, { logger }); }
+        } else {
+          e.host = deps.createHost ? deps.createHost(sim, err => failWorker(e, err)) : new InPageSimHost();
+          if (e.host.remote) {
+            await e.host.load(sim.cs, sim.content);
+            if (!wanted()) return;
+            await e.host.start(e.spec);
+          } else { e.host.sim = sim; e.host.start(e.spec, { logger }); }
+        }
         battle = e.host.battle;
       } catch (err) {
-        if (e.host?.remote) failWorker(e, err);
+        if (e.host?.remote || sim.remote) failWorker(e, err);
         else { console.warn('[runner] battle construction failed', err); recordError('runner', err, 'battle construction failed'); }
         return;
       }
@@ -906,8 +981,9 @@ export function createBattleRunner(deps) {
    * Drop every battle (a new round's prep, the match ended, the player left). Each dropped battle keeps its last
    * combat snapshot in combatHistory for the panel's match totals; `keepMetrics` false (a new match) starts over.
    */
-  function clear({ keepMetrics = false } = {}) {
+  function clear({ keepMetrics = false, keepWorker = false } = {}) {
     ++startSeq;
+    if (!keepWorker) dropIdleWorker();
     loading = null;
     for (const e of entries.values()) {
       // never drop an unreported authoritative result (the round already moved on: the server has its own).
@@ -918,7 +994,7 @@ export function createBattleRunner(deps) {
     // a battle still being prepared too: its preparation finds itself gone and stops (prepare). Snapshot first:
     // host.stop() drops the in-page Battle the meter reads.
     for (const e of pending.values()) rememberCombat(e);
-    for (const e of [...entries.values(), ...pending.values()]) e.host?.stop();
+    for (const e of new Set([...entries.values(), ...pending.values()])) releaseWorker(e, keepWorker);
     pending.clear();
     entries.clear();
     if (!keepMetrics) combatHistory.clear();
@@ -948,6 +1024,9 @@ export function createBattleRunner(deps) {
       // a fresh match (m.public gone), a rewound round or a return to a lobby-like phase resets the combat totals
       const resetMetrics = (!pub && lastPhase != null) || round < lastRound
         || (pub?.phase !== lastPhase && ['LOBBY', 'INFO_CHECK', 'BAND_DRAFT', 'BATTLE_CHECK'].includes(pub?.phase));
+      // Briefing -> band draft -> prep is still the same match: resetting metrics must not undo its warm-up.
+      const resetWorker = !pub || round < lastRound || ['LOBBY', 'RESULT'].includes(pub.phase)
+        || (pub.phase === 'INFO_CHECK' && lastPhase != null && lastPhase !== 'INFO_CHECK');
       if (resetMetrics) combatHistory.clear();
       lastRound = round;
       // solo pause (DESIGN §14): the local battle clocks follow m.public.paused
@@ -956,12 +1035,14 @@ export function createBattleRunner(deps) {
       if (phase === lastPhase && !resetMetrics) return;
       lastPhase = phase;
       if (!phase || ['PREP', 'ROUND_START', 'SP_DRAFT', 'RESULT', 'LOBBY', 'INFO_CHECK', 'BAND_DRAFT', 'BATTLE_CHECK'].includes(phase)) {
-        if (entries.size || pending.size) clear({ keepMetrics: !resetMetrics });
+        if (entries.size || pending.size || idleWorker) clear({ keepMetrics: !resetMetrics,
+          keepWorker: !resetWorker });
       }
       // warm the simulation up as soon as a match runs (the first b.start then starts at once) — on the room's content set
       // when it plays one (DESIGN §32.6)
       const roomCs = s && s.room && s.room.content && s.room.content.vanilla === false ? s.room.content.cs : null;
       if (phase && phase !== 'LOBBY' && (!simP || simCs !== (roomCs || null))) ensureSim(roomCs).catch(() => {});
+      if (roomCs && ['INFO_CHECK', 'BAND_DRAFT', 'BATTLE_CHECK', 'ROUND_START', 'SP_DRAFT', 'PREP'].includes(phase)) warmWorker(roomCs);
     }));
   }
   if (doc && typeof doc.addEventListener === 'function') {

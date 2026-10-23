@@ -283,6 +283,15 @@ Declarative operator traits (0.3.1, §34.26) contribute their referenced bonds a
 
 ---
 
+### Local data-only Worker startup (2026-10-23)
+
+The data-only simulation host preloads its engine during briefing/draft/prep and retains at most one idle Worker
+within the same match and checked content set. Reuse resets the Battle and wire/detail caches; concurrent fields
+remain independent. Leaving or ending the match, changing content and any failure discard the idle host. Script
+content retains one Worker per battle and its installation/execution watchdog. Trusted engine/module/data loading
+has a separate 60 s limit [ASSUMED], replacing the 15 s cold-load budget that could mistake network startup for a
+blocked plugin. The existing 2 s execution watchdog and server-takeover/content-result checks remain.
+
 ### Opening reroll messages and local seat recovery
 
 C→S adds host-only `room.rerollSetup {setupRevision}` / `room.cancelReroll {voteId}` and participant

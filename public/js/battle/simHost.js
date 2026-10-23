@@ -4,8 +4,8 @@ import { unitStatsEntry } from '../../../shared/protocol.js';
 
 /** [ASSUMED] 2 s per RPC, including construction and forceEnd (both can execute plugin hooks). */
 export const WORKER_TIMEOUT_MS = 2000;
-/** [ASSUMED] Trusted engine/module/data cold load can take longer; plugin code runs in a separate 2 s install RPC. */
-export const WORKER_LOAD_TIMEOUT_MS = 15000;
+/** [ASSUMED] Allow 60 s for trusted engine/module/data cold load; plugin code keeps its separate 2 s install RPC. */
+export const WORKER_LOAD_TIMEOUT_MS = 60000;
 const failure = (code, message) => Object.assign(new Error(message), { code });
 
 export class InPageSimHost {
@@ -118,6 +118,18 @@ export class WorkerSimHost {
     return packet;
   }
   async start(spec) { this.spec = spec; this.accept(await this.rpc('start', [spec])); return this; }
+  /** Reset only the battle; a data-only worker keeps its checked content and engine for the next round. */
+  async reset() {
+    await this.rpc('stop');
+    this.spec = null;
+    this.packet = null;
+    this.events.length = 0;
+    this.statsCache.clear();
+    this.statsPending.clear();
+    this.meter = null;
+    for (const key of Object.keys(this.battle)) if (typeof this.battle[key] !== 'function') delete this.battle[key];
+    return this;
+  }
   async step(n, opts) { return this.accept(await this.rpc('step', [n, opts])); }
   progress() { return this.packet.progress; }
   uniteLeft() { return this.packet.left; }

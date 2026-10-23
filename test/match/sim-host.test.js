@@ -106,7 +106,8 @@ test('script operator: permission child and Worker have byte-identical ev/result
   assert.equal(JSON.stringify(native.compactResult()),JSON.stringify(a.compactResult()));
 });
 
-test('runner: true infinite script and slow data step terminate, stop reports and request server takeover', { timeout: 15000 }, async t => {
+// Two cold engine boots precede the separate short install/step watchdogs.
+test('runner: true infinite script and slow data step terminate, stop reports and request server takeover', { timeout: 120000 }, async t => {
   for (const scripts of [true, false]) {
     const set = { ...fixtureSet(), ...(scripts ? makeScriptSet('export default function(){while(true){}}') : { data: { ...fixtureSet().data, __slow: true } }) };
     const sent = [], toasts = [];

@@ -1709,6 +1709,11 @@ Worker methods return Promises; the runner preserves a synchronous cached stats/
 The original content runs in-page. Every gameplay content set runs in a dedicated Worker with its checked data and
 `bounds` snapshot. Worker steps are capped at 600 ticks per RPC; only the main-thread runner controls pacing.
 A 2 s configurable watchdog [ASSUMED] covers blocked hooks and construction; no watchdog clock enters sim state.
+Trusted engine/module/data loading has its own 60 s budget [ASSUMED]; script installation still uses the 2 s watchdog.
+For data-only content sets, the runner warms one idle Worker during briefing/draft/prep and may recycle one completed
+field's Worker between rounds. `WorkerSimHost.reset()` drops the Battle and all page-side packet/events/detail caches,
+retaining only the checked content and engine. Active fields never share a Worker. Match end, leaving, a different
+content set and any failure discard it. Script sets retain per-battle Workers and are not preinstalled during briefing.
 Only sandbox script Workers/children run SES lockdown, before engine import. Both native and sandbox paths verify
 `@script` descriptors and use `createSDK(plugin, { settings, log })` plus the production extension registry/budget.
 SDK-owned return records are immutable copies; live Battle/Unit callback objects remain mutable.
