@@ -18,6 +18,10 @@
 依据：[失败运行](https://github.com/sakurahello1/Stronghold-Protocol/actions/runs/40163189712)及
 [setup-python 的解释器清单](https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json)。
 
+Windows 的 stdio 取消测试先用原有 1500 ms 启动预算收取一次就绪回复，再执行原有的 200 ms 请求超时／
+400 ms 慢回复／20 ms 快回复比较；静默子进程仍须在 100 ms 后被终止。这样不把新进程的启动耗时误当成
+已运行子进程的取消行为，生产传输代码和超时配置不变；慢请求的预期拒绝立即附上处理器，避免测试结束后产生未处理拒绝。
+
 ## 分片契约
 
 `ci-shards.json` 保存四片的计权输入；`tools/ci-shards.mjs` 读取与 `tools/ci.mjs` 相同的 `TEST_FILES`，按权重降序依次放入最轻的一片，同权重按文件名、同负载按片号裁决。
