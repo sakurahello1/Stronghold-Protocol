@@ -62,7 +62,7 @@ test('data-only engine warms during briefing and is reused next round without le
   assert.equal(host.statsCache.size, 0);
   assert.equal(s.ports.length, 1);
   assert.equal(s.commands.filter(x => x === 'load').length, 1);
-  assert.equal(s.commands.filter(x => x === 'stop').length, 1);
+  assert.equal(s.commands.filter(x => x === 'stop').length, 0, 'upstream start replaces the battle and clears its caches');
   assert.equal(s.commands.filter(x => x === 'start').length, 2);
   const fresh = new WorkerSimHost({ workerFactory: () => {
     const worker = new Worker(new URL('../helpers/simWorkerNode.mjs', import.meta.url));

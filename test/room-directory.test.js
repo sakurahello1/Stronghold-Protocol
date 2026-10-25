@@ -54,7 +54,7 @@ test('room summaries expose host/mode/difficulty/occupied seats/status, never pr
   const snapshot = await list(reader);
   assert.equal(snapshot.total, 2);
   const row = snapshot.rooms.find(r => r.code === coop.code);
-  assert.deepEqual(row, { code: coop.code, hostName: '房主甲', mode: 'coop', difficulty: 'HARD', players: 2,
+  assert.deepEqual(row, { code: coop.code, hostName: '房主甲', mode: 'coop', difficulty: 'HARD', version: 'act2autochess', players: 2,
     capacity: 4, inMatch: false, spectators: 0, spectatorCapacity: 2, canJoin: true, canSpectate: true });
   const singleRow = snapshot.rooms.find(r => r.code === single.code);
   assert.equal(singleRow.players, 1); assert.equal(singleRow.capacity, 1);

@@ -4,7 +4,7 @@ import { unitStatsEntry } from '../../../shared/protocol.js';
 
 /** [ASSUMED] 2 s per RPC, including construction and forceEnd (both can execute plugin hooks). */
 export const WORKER_TIMEOUT_MS = 2000;
-/** [ASSUMED] Allow 60 s for trusted engine/module/data cold load; plugin code keeps its separate 2 s install RPC. */
+/** [ASSUMED] Trusted engine/module/data cold load can take longer; plugin code runs in a separate 2 s install RPC. */
 export const WORKER_LOAD_TIMEOUT_MS = 60000;
 const failure = (code, message) => Object.assign(new Error(message), { code });
 
@@ -117,17 +117,16 @@ export class WorkerSimHost {
     this.meter = packet.meter;
     return packet;
   }
-  async start(spec) { this.spec = spec; this.accept(await this.rpc('start', [spec])); return this; }
-  /** Reset only the battle; a data-only worker keeps its checked content and engine for the next round. */
-  async reset() {
-    await this.rpc('stop');
-    this.spec = null;
-    this.packet = null;
+  async start(spec) {
+    this.spec = spec;
+    // A reused worker still has the previous battle's events and stat RPCs. Drop them after `start` returns so a
+    // step that was already in flight cannot append onto the new battle, and ignore stat replies from the old one.
+    this.statsGeneration = (this.statsGeneration || 0) + 1;
+    this.statsPending.clear();
+    const packet = await this.rpc('start', [spec]);
     this.events.length = 0;
     this.statsCache.clear();
-    this.statsPending.clear();
-    this.meter = null;
-    for (const key of Object.keys(this.battle)) if (typeof this.battle[key] !== 'function') delete this.battle[key];
+    this.accept(packet);
     return this;
   }
   async step(n, opts) { return this.accept(await this.rpc('step', [n, opts])); }
@@ -137,7 +136,12 @@ export class WorkerSimHost {
   unitStats(id) {
     if (!this.stopped && !this.statsPending.has(id)) {
       this.statsPending.add(id);
-      this.rpc('unitStats', [id]).then(v => this.statsCache.set(id, v), () => {}).finally(() => this.statsPending.delete(id));
+      const generation = this.statsGeneration || 0;
+      this.rpc('unitStats', [id]).then(v => {
+        if (generation === (this.statsGeneration || 0)) this.statsCache.set(id, v);
+      }, () => {}).finally(() => {
+        if (generation === (this.statsGeneration || 0)) this.statsPending.delete(id);
+      });
     }
     return this.statsCache.get(id) || null;
   }
