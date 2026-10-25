@@ -28,6 +28,8 @@ test('server lobby shows real rooms, joins before start, and spectates a running
     page.on('pageerror', e => errors.push(e.message));
     await page.evaluateOnNewDocument(() => { localStorage.setItem('sp.name', '大厅测试玩家'); sessionStorage.setItem('sp.entered', '1'); });
     await page.goto(`http://127.0.0.1:${server.port}/`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.hub-entry--coop', { visible: true });
+    await page.click('.hub-entry--coop');
     await page.waitForSelector(`.server-rooms tr[data-room="${running.code}"]`);
     const selector = code => `.server-rooms tr[data-room="${code}"]`;
     const rows = await page.$$eval('.server-rooms tbody tr', list => list.map(row => ({
@@ -56,6 +58,12 @@ test('server lobby shows real rooms, joins before start, and spectates a running
     assert.ok(state.room.seats.some(s => s?.playerId === state.id));
     assert.ok(!state.room.spectators.some(s => s.playerId === state.id));
     await page.click('button[aria-label="离开同盟"]');
+    // The router restores the lobby component with its alliance dialog still open on some transition frames.
+    await page.waitForFunction(() => window.__SP__.store.get().room == null);
+    if (!await page.$('.server-rooms')) {
+      await page.waitForSelector('.hub-entry--coop', { visible: true });
+      await page.click('.hub-entry--coop');
+    }
     await page.waitForSelector(selector(running.code));
     await page.$eval(selector(running.code), row => [...row.querySelectorAll('button')].find(b => b.textContent.includes('观战')).click());
     await page.waitForFunction(code => {

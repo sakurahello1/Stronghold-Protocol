@@ -175,6 +175,37 @@ describe('field initialization in headless Chrome', { skip }, () => {
     });
   }
 
+  test('a device without WebGL stays in fallback without automatic loading flashes', async (t) => {
+    const { page } = await open(t);
+    await page.evaluate(async () => {
+      const getContext = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (kind, ...args) {
+        return /webgl/i.test(kind) ? null : getContext.call(this, kind, ...args);
+      };
+      const { render, h } = await import('/vendor/preact.module.js');
+      const { useRef, useEffect } = await import('/vendor/hooks.module.js');
+      const { useFieldView } = await import('/js/ui/fieldHost.js');
+      window.__noWebglKinds = [];
+      function Harness() {
+        const host = useRef(null), { view, kind } = useFieldView(host);
+        useEffect(() => {
+          window.__noWebglKinds.push(kind);
+          window.__noWebglReason = view?.fallbackReason;
+        }, [view, kind]);
+        return h('div', { ref: host, style: 'position:relative;width:1000px;height:650px' });
+      }
+      render(h(Harness), document.getElementById('hooks'));
+      window.__noWebglUnmount = () => render(null, document.getElementById('hooks'));
+    });
+    await page.waitForFunction(() => window.__noWebglReason === 'error');
+    // Cover both configured backoff delays without dispatching online/visibility events.
+    await new Promise(resolve => setTimeout(resolve, 10500));
+    assert.deepEqual(await page.evaluate(() => window.__noWebglKinds), ['loading', 'fallback']);
+    assert.equal(await page.evaluate(() => window.__initialization.calls), 1);
+    await page.evaluate(() => window.__noWebglUnmount());
+    assert.equal(await page.evaluate(() => window.__SP_VIEW__), null);
+  });
+
   async function clickFallback(page) {
     await page.waitForSelector('#host .ff-tile--floor');
     const tile = await page.$eval('#host .ff-tile--floor', (element) => {

@@ -65,6 +65,11 @@ test('elite AI capability admits only the reviewed additive records, never a plu
 test('the shared room predicate preserves vanilla, unsupported-plugin and FUNNY boundaries', () => {
   for (const difficulty of ['NORMAL', 'HARD', 'FUNNY']) {
     assert.equal(eliteAiAllowed({ difficulty }), difficulty !== 'FUNNY');
+    assert.equal(eliteAiAllowed({ difficulty, version: 'act2autochess' }), difficulty !== 'FUNNY');
+    for (const version of ['act1autochess', 'act1autochess@V1_1', 'act2autochess@V2_1']) {
+      assert.equal(eliteAiAllowed({ difficulty, version, content: { vanilla: true } }), false);
+      assert.equal(eliteAiAllowed({ difficulty, version, content: { vanilla: false, eliteAiCompatible: true } }), false);
+    }
     assert.equal(eliteAiAllowed({ difficulty, content: { vanilla: true } }), difficulty !== 'FUNNY');
     assert.equal(eliteAiAllowed({ difficulty, content: { vanilla: false } }), false);
     assert.equal(eliteAiAllowed({ difficulty, content: { vanilla: false, eliteAiCompatible: true } }), difficulty !== 'FUNNY');
@@ -124,7 +129,9 @@ for (const transport of ['process', 'worker']) {
     // RoomSets adds the registry-verified class to ContentSets' plugin identities.
     assert.equal(eliteAiCompatible({ ...resolved.set, plugins: descriptor.plugins }, contents.dataOf(cs), base), true, 'real composition, not just applyPatches');
     contents.hold(cs);
-    const hosts = createMatchHosts({ contents, log: quiet, options: { transport, virtualTime: true, matchOptions: { botRehearsal: 0 } } });
+    const hostLogs = [];
+    const log = Object.fromEntries(['info', 'warn', 'error', 'debug'].map(level => [level, (...args) => hostLogs.push(`${level}: ${args.join(' ')}`)]));
+    const hosts = createMatchHosts({ contents, log, options: { transport, virtualTime: true, matchOptions: { botRehearsal: 0 } } });
     const messages = [];
     let end;
     const ended = new Promise(resolve => { end = resolve; });
@@ -136,7 +143,7 @@ for (const transport of ['process', 'worker']) {
         send: (_pid, msg) => { messages.push(msg); return true; }, broadcast: msg => messages.push(msg), onEnd: end });
       m.start();
       const summary = await Promise.race([ended, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${transport}: elite plugin match did not finish`)), 220_000); })]);
-      assert.equal(typeof summary.victory, 'boolean');
+      assert.equal(typeof summary.victory, 'boolean', JSON.stringify({ summary, hostLogs: hostLogs.slice(-15) }));
       assert.ok(summary.roundsPassed >= 2, JSON.stringify(summary));
       const diag = await m.diag();
       assert.equal(diag.errorCount, 0, JSON.stringify(diag.errors));

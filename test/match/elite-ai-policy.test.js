@@ -13,7 +13,8 @@ for(const id of ['arturia','lavinia'])test(`${id}: installed decision policy is 
     assert.equal(sha(original),expected,path);
     const runtime=readFileSync(new URL(`server/match/${id}/${path}`,root),'utf8').replaceAll('\r\n','\n')
       .replace(/^[ \t]*\/\/ host-compat loop-cap:[^\n]*\n/gm,'')
-      .replace(/ \/\/ i18n-ignore: host-compat internal strategy\/data labels; never UI text/g,'');
+      .replace(/ \/\/ i18n-ignore: host-compat internal strategy\/data labels; never UI text/g,'')
+      .replace("import { mitigate } from '../../../../../sim/attack.js'; // host-compat: public settlement API renamed in 0.3.2", "import { mitigate } from '../../../../../sim/damage.js';");
     assert.equal(runtime,original,path);
   }
 });

@@ -1,4 +1,4 @@
-# Optional local recruits and elite AI (0.3.1)
+# Optional local recruits and elite AI (0.3.3)
 
 The server owner's 2026-10-21 request adds 丰川祥子 and 结城理 to tier-5 and tier-6 owned-operator selection without new
 bonds. It also installs AI·阿尔图罗 v0.2.0 and AI·拉维妮娅 v0.1.2. The original five UI/room customizations remain.
@@ -39,12 +39,17 @@ the original pool. The room is correctly marked as modified. Neither operator is
 
 Source: https://github.com/HankDUMPLINGZhong/Stronghold-Protocol-AI at
 `7d4e051b990a0b63578e33bddac44fe2c068b5e3`. The released addon policy bundles and hashes are unchanged. Runtime copies add only loop-cap and internal-label
-comments required by the host; a byte-comparison test strips precisely those comments to verify the original policy.
+comments required by the host. Since 0.3.3, the runtime imports the pure `mitigate` helper from its renamed public
+`sim/attack.js` entry instead of the removed `sim/damage.js`; these calls pass no penetration options, so their
+arithmetic is unchanged. A byte-comparison test normalizes precisely that import and those comments to verify the
+original decision policy. The immutable addon distributions and their published hashes are not rewritten.
 The waiting-room portraits use the existing pure URL helper to retain the vanilla lazy asset-loading boundary. Each copied addon
 includes its GPL license and installation tools. Install Arturia first, then Lavinia; uninstall in reverse order.
 Private `.arturia-addon` / `.lavinia-addon` recovery journals stay local and are never committed.
 
-The waiting-room menu adds the selected elite AI. Ordinary AI remains unchanged. Both require a supported difficulty.
+The waiting-room menu adds the selected elite AI. Ordinary AI remains unchanged. Both require a supported difficulty
+and the default official period, 第二期下半. Historical-version recruitment and a switch with elite seats are refused:
+their fixed bands/rosters were not designed for those datasets. Ordinary AI remains available in the other periods.
 Owner request, 2026-10-23: elite AI also accepts the reviewed `collab-recruits` room, with optional cosmetic companions.
 The server verifies composed gameplay data: only the two namespaced DIY units, their owned-pool entries and their
 existing-bond DIY records may be added. Existing operators, shops, economy, bonds, stages and modes must stay identical.

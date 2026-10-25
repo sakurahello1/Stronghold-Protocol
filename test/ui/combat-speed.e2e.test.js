@@ -15,16 +15,18 @@ test('2× HUD: four human clients vote, withdraw, sync observers, and fit deskto
   let browser;
   const peers = [];
   try {
-    browser = await P.launch({ executablePath: executable, headless: true,
-      args: ['--disable-gpu', '--no-proxy-server', '--disable-background-timer-throttling', '--disable-renderer-backgrounding'] });
+    browser = await P.launch({ executablePath: executable, headless: true, protocolTimeout: 30000,
+      args: ['--no-sandbox', '--no-proxy-server', '--disable-background-timer-throttling'] });
     t.diagnostic('browser ready');
     const errors = [];
     const open = async name => {
       const ctx = await browser.createBrowserContext(); const p = await ctx.newPage();
+      t.diagnostic(`${name}: page ready`);
       p.on('pageerror', e => errors.push(e.message));
       await p.setViewport({ width: 1366, height: 768 });
       await p.evaluateOnNewDocument(n => { localStorage.setItem('sp.name', n); sessionStorage.setItem('sp.entered', '1'); }, name);
       await p.goto(`http://127.0.0.1:${s.port}/?render=fallback&board=2d`, { waitUntil: 'domcontentloaded' });
+      t.diagnostic(`${name}: page loaded`);
       await p.waitForFunction(() => window.__SP__?.store.get().connection.status === 'online', { polling: 100 });
       return p;
     };

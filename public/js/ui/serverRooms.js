@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html, Button, MicroLabel, Tooltip } from './components.js';
 import { DIFFICULTY_NAMES, ERR } from '../../../shared/constants.js';
 import { net } from '../net.js';
+import { versionLabel } from '../versions.js';
 import { t } from '../../../shared/i18n.js';
 
 export function ServerRooms({ online, busy, onJoin, onSpectate }) {
@@ -55,6 +56,7 @@ export function ServerRooms({ online, busy, onJoin, onSpectate }) {
         <tbody>${rooms.map(room => html`<tr key=${room.code} data-room=${room.code}>
           <td><span class="server-rooms__host" title=${room.hostName}>${room.hostName}</span><small class="num">${room.code}</small></td>
           <td>${room.mode === 'solo' ? t('独立模拟') : t('同盟模拟')} · ${room.modeName || t(DIFFICULTY_NAMES[room.difficulty] || room.difficulty)}
+            ${room.version ? html`<small>${versionLabel(room.version)}</small>` : null}
             ${room.modded ? html`<small>${t('非官方')}</small>` : null}</td>
           <td class="num">${room.players}/${room.capacity}</td>
           <td><span class=${`server-rooms__status${room.inMatch ? ' is-running' : ''}`}>${room.inMatch ? t('游戏中') : t('准备中')}</span></td>

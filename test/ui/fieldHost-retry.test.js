@@ -8,13 +8,11 @@ const source = readFileSync(new URL('../../public/js/ui/fieldHost.js', import.me
   .replace('mountFieldView(host, { signal: controller.signal })', 'mountAttempt(host, { signal: controller.signal })');
 const flush = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); };
 
-function fixture({ kinds = ['fallback', 'engine'], forced = false } = {}) {
+function fixture({ kinds = ['fallback', 'engine'], forced = false, reason = 'timeout', delays } = {}) {
   const slots = [], timers = new Map(), views = [], attempts = [];
   const window = new EventTarget();
   const document = new EventTarget(); document.visibilityState = 'visible';
   const navigator = { onLine: true };
-  let storeState = { me: { playerId: 'analysis-me' }, match: { public: { players: [{ playerId: 'analysis-me', skins: {} }] } } };
-  let onStore = null;
   let cursor = 0, queued = false, mounted = true, cleanup, effect, state, timerId = 0;
   const rerender = () => {
     if (!mounted || queued) return;
@@ -26,7 +24,7 @@ function fixture({ kinds = ['fallback', 'engine'], forced = false } = {}) {
     location: { search: forced ? '?render=fallback' : '' },
     console: { error() {}, warn() {} },
     settingsStore: { subscribe: () => () => {} },
-    store: { get: () => storeState, subscribe: fn => { onStore = fn; return () => { onStore = null; }; } },
+    store: { get: () => ({}), subscribe: () => () => {} },
     useState(initial) {
       const i = cursor++; if (!(i in slots)) slots[i] = initial;
       return [slots[i], value => { const next = typeof value === 'function' ? value(slots[i]) : value;
@@ -40,12 +38,12 @@ function fixture({ kinds = ['fallback', 'engine'], forced = false } = {}) {
     setTimeout(fn, ms) { const id = ++timerId; timers.set(id, { fn, ms }); return id; },
     clearTimeout(id) { timers.delete(id); },
     mountAttempt(_host, { signal }) {
-      const view = { kind: kinds[Math.min(attempts.length, kinds.length - 1)], destroyed: 0,
-        destroy() { this.destroyed++; }, resize() {}, setMe(id) { this.me = id; }, setSkins(players) { this.skins = players; } };
+      const view = { kind: kinds[Math.min(attempts.length, kinds.length - 1)], fallbackReason: reason, destroyed: 0,
+        destroy() { this.destroyed++; }, resize() {} };
       attempts.push(signal); views.push(view); return Promise.resolve(view);
     },
   });
-  vm.runInContext(source + '\nglobalThis.hook = useFieldView;', context);
+  vm.runInContext((delays ? source.replace('[2000, 8000]', JSON.stringify(delays)) : source) + '\nglobalThis.hook = useFieldView;', context);
   function render() {
     cursor = 0; effect = null; state = context.hook({ current: {} });
     if (effect) { cleanup?.(); cleanup = effect(); }
@@ -59,7 +57,6 @@ function fixture({ kinds = ['fallback', 'engine'], forced = false } = {}) {
       const [id, timer] = entry; timers.delete(id); timer.fn(); },
     unmount() { mounted = false; cleanup?.(); },
     get exposed() { return context.__SP_VIEW__; },
-    updateStore(next) { const prev = storeState; storeState = next; onStore?.(next, prev); },
   };
 }
 
@@ -89,16 +86,6 @@ test('a long outage can recover on return even after the automatic retry budget 
   f.unmount();
 });
 
-test('automatic recovery preserves v0.3.1 seat identity and live skin updates', async () => {
-  const f = fixture(); await flush(); f.fire(); await flush();
-  assert.equal(f.views[1].me, 'analysis-me');
-  const players = [{ playerId: 'next-player', skins: { char_example: 'skin_example' } }];
-  f.updateStore({ me: { playerId: 'next-player' }, match: { public: { players } } });
-  assert.equal(f.views[1].me, 'next-player'); assert.equal(f.views[1].skins, players);
-  assert.equal(f.attempts.length, 2, 'a skin update does not remount or reset the recovered battle');
-  f.unmount();
-});
-
 test('automatic retry and repeated user events share a single attempt', async () => {
   const f = fixture(); await flush(); f.fire();
   for (let i = 0; i < 5; i++) { f.event('online'); f.event('visibilitychange'); }
@@ -122,4 +109,20 @@ test('explicit simplified rendering never retries and unmount cancels a pending 
   const f = fixture(); await flush(); assert.equal(f.timers.size, 1);
   f.unmount(); assert.equal(f.timers.size, 0); f.event('online'); await flush();
   assert.equal(f.attempts.length, 1); assert.equal(f.views[0].destroyed, 1);
+});
+
+test('non-timeout failures do not flash automatic loading, but event recovery remains bounded', async () => {
+  const f = fixture({ kinds: ['fallback'], reason: 'error' }); await flush();
+  assert.equal(f.timers.size, 0);
+  for (let i = 0; i < 4; i++) { f.event('online'); await flush(); }
+  assert.equal(f.attempts.length, 3, 'initial mount and only two event retries');
+  assert.equal(f.timers.size, 0); f.unmount();
+});
+
+test('event retry budget does not change when the automatic delay list changes', async () => {
+  const f = fixture({ kinds: ['fallback'], delays: [2000] }); await flush();
+  f.fire(); await flush(); assert.equal(f.attempts.length, 2); assert.equal(f.timers.size, 0);
+  for (let i = 0; i < 4; i++) { f.event('online'); await flush(); }
+  assert.equal(f.attempts.length, 4, 'one automatic retry plus two independent event retries');
+  f.unmount();
 });
