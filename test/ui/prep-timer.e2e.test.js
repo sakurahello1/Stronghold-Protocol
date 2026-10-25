@@ -29,7 +29,8 @@ test('room checkbox is host-only, syncs guests, resets readiness, and is frozen 
       return p;
     };
     const send = (p, type, args = {}) => p.evaluate(async (t, a) => (await import('/js/net.js')).net.request(t, a), type, args);
-    const clickText = (p, text) => p.$$eval('.room-bar button', (buttons, t) => buttons.find(b => b.textContent.trim() === t).click(), text);
+    const clickText = (p, text) => p.$$eval('.room-bar button', (buttons, t) => buttons.find(b =>
+      (b.querySelector('.proto-start__label')?.textContent || b.textContent).trim() === t).click(), text);
     const host = await open('计时器房主');
     await send(host, 'room.create', { mode: 'coop', difficulty: 'NORMAL' });
     await host.waitForSelector('.rs-pill__gear'); await host.click('.rs-pill__gear');

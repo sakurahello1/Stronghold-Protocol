@@ -645,12 +645,14 @@ test('startMatch: a version room plays in its version host (version + requireCs)
   h.lobby.simPool = { submit() { throw new Error("must not reach hosted versions"); } };
   const p = h.player('A');
   ok(h.lobby.create(p, { mode: 'solo', difficulty: 'NORMAL', version: 'act2autochess@V2_1' }));
+  ok(h.lobby.setPrepTimer(p, { on: true }));
   ok(h.lobby.contentReady(p, { cs: CS['act2autochess@V2_1'] }));
   ok(h.lobby.start(p));
   const [cs, opts] = hosted[0];
   assert.equal(cs, CS['act2autochess@V2_1']);
   assert.equal(opts.version, 'act2autochess@V2_1');
   assert.equal(opts.requireCs, true);
+  assert.equal(opts.prepTimer, true, 'the explicit PREP override reaches a historical-version host');
   assert.equal(opts.cs, cs);
   assert.equal(Object.hasOwn(opts, 'kitted'), false, 'kitted only with gameplay plugins');
   assert.equal(opts.data, getVersionData('act2autochess@V2_1'));
@@ -661,7 +663,8 @@ test('startMatch: a version room plays in its version host (version + requireCs)
   ok(h.lobby.start(q));
   assert.equal(hosted.length, 1);
   const keys = Object.keys(Rec.last).sort();
-  assert.deepEqual(keys, ['aiPicksLast', 'broadcast', 'cs', 'data', 'difficulty', 'hostId', 'log', 'matchNo', 'mode', 'modeId', 'now', 'onEnd', 'roomCode', 'seats', 'seed', 'send', 'spectators']);
+  assert.deepEqual(keys, ['aiPicksLast', 'broadcast', 'cs', 'data', 'difficulty', 'hostId', 'log', 'matchNo', 'mode', 'modeId', 'now', 'onEnd', 'prepTimer', 'roomCode', 'seats', 'seed', 'send', 'spectators']);
+  assert.equal(Rec.last.prepTimer, false, 'the custom solo default remains untimed');
   // a version room without a version host, and the real Match class: never in this process
   const lone = new Lobby({ registry: new SessionRegistry(), log: quiet, content: { cs: VANILLA }, getData, versions: versionStub() });
   const s = lone.registry.create('C');

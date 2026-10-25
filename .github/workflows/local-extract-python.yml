@@ -11,7 +11,9 @@ permissions:
 jobs:
   compile:
     name: local-extract (Python 3.8 syntax)
-    runs-on: ubuntu-latest
+    # Python 3.8 has no setup-python binary for the current ubuntu-latest (26.04).
+    # Keep the minimum supported interpreter check on an image with published 3.8 builds.
+    runs-on: ubuntu-24.04
     # [ASSUMED] Five minutes covers interpreter setup and syntax compilation (DESIGN §35.2).
     timeout-minutes: 5
     steps:

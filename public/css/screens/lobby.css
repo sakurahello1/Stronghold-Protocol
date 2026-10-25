@@ -1195,13 +1195,13 @@ button.ally-card:disabled .ally-card__bar { filter: grayscale(.5) brightness(.8)
 .ally-stage .server-rooms { position: relative; z-index: 1; width: 100%; max-height: 100%; min-width: 0; padding: .18rem; overflow: auto; background: rgba(13, 16, 15, .92); border: 1px solid var(--line); }
 .server-rooms__head { display: flex; align-items: center; justify-content: space-between; gap: .12rem; }
 .server-rooms__head .section-label { margin: 0; }
-.server-rooms__hint, .server-rooms__error, .server-rooms__empty { margin: .1rem 0; font-size: max(12px, calc(.14 * var(--t))); color: var(--text-lo); }
+.server-rooms__hint, .server-rooms__error, .server-rooms__empty { margin: .1rem 0; font-size: calc(.14 * var(--t)); color: var(--text-lo); }
 .server-rooms__scroll { overflow: auto; max-height: 55vh; }
-.server-rooms__table { width: 100%; border-collapse: collapse; font-size: max(12px, calc(.15 * var(--t))); }
+.server-rooms__table { width: 100%; border-collapse: collapse; font-size: calc(.15 * var(--t)); }
 .server-rooms__table th, .server-rooms__table td { padding: .1rem .08rem; text-align: left; border-bottom: 1px solid var(--line); }
 .server-rooms__table small { display: block; color: var(--text-lo); }
 .server-rooms__host { display: block; max-width: 2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .server-rooms__actions, .server-rooms__pages { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .06rem; }
 .server-rooms__status { white-space: nowrap; color: var(--mint-400); }
 .server-rooms__status.is-running { color: var(--amber); }
-@media (max-width: 800px), (max-height: 520px) { .ally-body:has(.server-rooms) { overflow: auto; } .ally-stage:has(.server-rooms) { min-height: 2.5rem; } }
+@media (max-width: 800px), (max-height: 520px) { .ally-body { overflow: auto; } .ally-stage--directory { min-height: 2.5rem; } }

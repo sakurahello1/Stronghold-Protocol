@@ -658,12 +658,11 @@
 .ailast__opt:last-child { border-right: 1px solid var(--line-2); }
 .ailast__opt .icon { opacity: .25; }
 .ailast__opt .icon.is-on { opacity: 1; }
-.prep-timer { display: flex; align-items: center; gap: .08rem; min-height: .3rem; font-size: max(calc(.14 * var(--t)), 12px); cursor: pointer; }
+.prep-timer { display: flex; align-items: center; gap: .08rem; min-height: .3rem; font-size: calc(.14 * var(--t)); cursor: pointer; }
 .prep-timer input { width: max(.17rem, 14px); height: max(.17rem, 14px); margin: 0; accent-color: var(--mint-400); }
 .prep-timer input:disabled { cursor: default; }
 .rseat__add--custom { display: flex; flex-direction: column; gap: .06rem; width: 100%; }
 .rseat__add--custom .elite-recruit { z-index: 3; }
-.room-bar--prep-timer { min-height: max(1.5rem, 90px); }
 
 
 

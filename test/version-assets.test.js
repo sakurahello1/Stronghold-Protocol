@@ -8,6 +8,7 @@ import { addManifestEntries, presentationUnion, versionAssetData } from '../tool
 import { fxFixture } from './helpers/fxFixtures.js';
 
 const root = path.resolve(import.meta.dirname, '..');
+const PY = ['python3', 'python'].find(bin => spawnSync(bin, ['--version']).status === 0) || 'python3';
 const assets = JSON.parse(readFileSync(path.join(root, 'data/assets.json'), 'utf8'));
 
 test('every official version declares comparable pictures, models, clips, icons and scenes without installed art', () => {
@@ -55,7 +56,7 @@ test('fx discovery includes each season even when their chess ids collide', (t) 
     char_9001_current: { skills: [{ skillId: 'sk_shared[3]' }] },
     char_9002_earlier: { skills: [{ skillId: 'sk_shared[3]', overridePrefabKey: 'skchr_earlier_1' }] },
   });
-  const r = spawnSync('python3', ['-B', '-c', `import sys,json\nsys.path.insert(0,${JSON.stringify(path.join(root, 'tools/local-extract'))})\nimport fx\nprint(json.dumps(fx.game_data(${JSON.stringify(f.root)})))`], { encoding: 'utf8' });
+  const r = spawnSync(PY, ['-B', '-c', `import sys,json\nsys.path.insert(0,${JSON.stringify(path.join(root, 'tools/local-extract'))})\nimport fx\nprint(json.dumps(fx.game_data(${JSON.stringify(f.root)})))`], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   const gd = JSON.parse(r.stdout);
   assert.deepEqual(gd.chars, ['char_9001_current', 'char_9002_earlier']);
@@ -65,6 +66,7 @@ test('fx discovery includes each season even when their chess ids collide', (t) 
 
 test('add-only FX extraction retains shared metadata and old files while crawling only new units', (t) => {
   const f = fxFixture(t);
+  // This metadata-only fixture mocks the exporter, not image bytes. Codec checks have their own Pillow suite.
   const script = `import sys,json,pathlib
 from unittest.mock import patch
 sys.path.insert(0,${JSON.stringify(path.join(root, 'tools/local-extract'))})
@@ -94,8 +96,10 @@ with patch.object(fx,'scan_cabs',return_value={}), \\
  patch.object(fx,'container_index',return_value={'old':'bundle','new':'bundle'}), \\
  patch.object(fx,'client_version',return_value='fixture'), \\
  patch.object(fx,'game_data',return_value={'chars':['char_old','char_new'],'enemies':[],'tokens':[]}), \\
- patch.object(fx,'crawl_units',side_effect=crawl), patch.object(fx,'_export_worker',side_effect=worker):
+ patch.object(fx,'crawl_units',side_effect=crawl), patch.object(fx,'_export_worker',side_effect=worker), \\
+ patch.object(fx,'check_texture_format') as codec_check:
  fx.export_fx(root,out,{},lambda line:None,selection='used',jobs=1,root=root,fx_manifest=manifest,add_only=True)
+codec_check.assert_called_once_with('webp')
 new=json.loads((dest/'index.json').read_text())
 for group in ['units','projectiles','skills','skins','prefabs']:
  for key,value in old[group].items(): assert new[group][key]==value,(group,key)
@@ -104,6 +108,6 @@ assert json.loads((dest/'textures.json').read_text())['textures']['shared']==tex
 assert json.loads(manifest.read_text())['groups']['fx/tex']==groups['fx/tex']
 assert (dest/'untouched.bin').read_bytes()==b'keep'
 `;
-  const r = spawnSync('python3', ['-B', '-c', script], { encoding: 'utf8' });
+  const r = spawnSync(PY, ['-B', '-c', script], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
 });

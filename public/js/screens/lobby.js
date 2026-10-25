@@ -612,7 +612,7 @@ export function AllianceSelect({ onClose, onCreate, difficulty = 'FUNNY', code, 
         </div>
       </header>
       <div class="proto-body ally-body">
-        <section class="ally-stage">
+        <section class="ally-stage ally-stage--directory">
           <${ServerRooms} online=${online} busy=${busy} onJoin=${onJoin} onSpectate=${onSpectate} />
           <button type="button" class="ally-guide" onClick=${() => openGuide(0)}><span class="ally-guide__icon"><${Icon} name="book" /></span>${t('玩法说明')}</button>
         </section>

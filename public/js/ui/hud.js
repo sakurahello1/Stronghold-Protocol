@@ -482,8 +482,8 @@ export function PauseButton({ paused, busy = false, onToggle }) {
  *   held: the HUD waits hidden under 协议启动！ — a phase change's capsule scene waits for it (useCapsuleFx)
  */
 export function TopBar({ pub, priv, conn, hud, total, drawer, onExit, onDrawer, onReady, readyBusy, readyCount, playerCount, pen = false, penAvail = false, onPen = () => {},
-  config = null, frozenAt = null, pause = null, live = null, spectator = false,
-  spectators = null, myId = null, isHost = false, onRemoveSpectator = null, room = null, held = false, speedBusy = false, onSpeed = null }) {
+  config = null, frozenAt = null, pause = null, live = null, spectator = false, speedBusy = false, onSpeed = null,
+  spectators = null, myId = null, isHost = false, onRemoveSpectator = null, room = null, held = false }) {
   const phase = pub?.phase;
   const boss = isBossPhase(phase);
   const lp = boss && Number.isFinite(pub?.teamLp) ? pub.teamLp : Number.isFinite(priv?.lp) ? priv.lp : null;

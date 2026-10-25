@@ -10,6 +10,14 @@
 本机 `npm run ci`（`node tools/ci.mjs`）依次复跑 setup、全量测试、冒烟、CI 守卫、lint、导入边界和类型检查。
 `--only`、`--keep-going`、`--list` 见 [CONTRIBUTING.md](../CONTRIBUTING.md)。本地测试步骤清除继承的 `SHARD` 和 `JUNIT`，保证全量且不意外写报告；全量黄金另跑 `npm run golden`。本地不复制 CI 的系统或 Node 版本矩阵。
 
+## 本地分支的 Python 3.8 环境兼容
+
+2026-10-25 的迁移检查中，`ubuntu-latest` 已指向 26.04，`setup-python` 在执行语法检查前就报告找不到 Python 3.8。
+本地分支只把独立的 Python 3.8 任务固定为 `ubuntu-24.04`；官方安装清单仍为该镜像提供 3.8 构建。
+最低版本、`compileall` 检查范围、Node 的平台矩阵与全量测试断言均不变。
+依据：[失败运行](https://github.com/sakurahello1/Stronghold-Protocol/actions/runs/40163189712)及
+[setup-python 的解释器清单](https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json)。
+
 ## 分片契约
 
 `ci-shards.json` 保存四片的计权输入；`tools/ci-shards.mjs` 读取与 `tools/ci.mjs` 相同的 `TEST_FILES`，按权重降序依次放入最轻的一片，同权重按文件名、同负载按片号裁决。
